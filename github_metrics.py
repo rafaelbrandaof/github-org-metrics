@@ -63,6 +63,7 @@ class RepositoryMetrics:
     branch_count: int = 0
     contributor_count: int = 0
     activity: int = 0
+    pr_count: int = 0  # PRs opened/updated in time period
     # DORA metrics
     deployment_count: int = 0
     deployment_failures: int = 0
@@ -93,9 +94,9 @@ def format_date_for_display(date_str: str) -> str:
         date_str: ISO format date string from GitHub API.
 
     Returns:
-        A formatted date string like 'January 15, 2024'.
+        A formatted date string like '21/12/25'.
     """
-    return parse_github_date(date_str).strftime("%B %d, %Y")
+    return parse_github_date(date_str).strftime("%d/%m/%y")
 
 
 class GitHubAPIClient:
@@ -209,7 +210,7 @@ class GitHubAPIClient:
         org: str,
         since: str,
         target_repos: list[str] | None = None,
-        max_repos: int = 20,
+        max_repos: int | None = None,
     ) -> list[dict[str, Any]]:
         """Fetch repositories for an organization.
 
@@ -217,7 +218,7 @@ class GitHubAPIClient:
             org: The GitHub organization name.
             since: ISO format date string to filter repos pushed after this date.
             target_repos: Optional list of specific repo names to fetch.
-            max_repos: Maximum number of repositories to return if no target specified.
+            max_repos: Maximum repos to return (None for all).
 
         Returns:
             A list of repository data dictionaries.
@@ -268,7 +269,7 @@ class GitHubAPIClient:
                 repos.extend(filtered)
                 logger.info("Retrieved %d repositories", len(repos))
 
-                if len(page_repos) < 100 or len(repos) >= max_repos:
+                if len(page_repos) < 100 or (max_repos and len(repos) >= max_repos):
                     break
 
             page += 1
@@ -276,10 +277,11 @@ class GitHubAPIClient:
         if target_repos and missing_repos:
             logger.warning("Repositories not found: %s", ", ".join(missing_repos))
 
-        if not target_repos:
+        if not target_repos and max_repos:
             repos = repos[:max_repos]
 
         logger.info("Total repositories to analyze: %d", len(repos))
+        logger.info("Repos: %s", ", ".join(r["name"] for r in repos))
         return repos
 
     def get_commits(self, org: str, repo: str, since: str) -> list[dict[str, Any]]:
@@ -416,7 +418,7 @@ def fetch_data(
     since: str,
     target_repos: list[str] | None = None,
     *,
-    fetch_pr_details: bool = False,
+    fetch_pr_details: bool = True,
 ) -> dict[str, Any]:
     """Fetch all metrics data for an organization.
 
@@ -432,6 +434,7 @@ def fetch_data(
     """
     data: dict[str, Any] = {
         "repos": client.get_org_repos(org, since, target_repos),
+        "fetch_pr_details": fetch_pr_details,  # Track whether detailed PR data was fetched
         "commits": {},
         "commit_stats": {},
         "branches": {},
@@ -582,6 +585,9 @@ def analyze_data(data: dict[str, Any], since: str) -> tuple[pd.DataFrame, pd.Dat
     Returns:
         A tuple of (developer_metrics_df, repository_metrics_df).
     """
+    # Check if detailed PR data was fetched
+    has_pr_details = data.get("fetch_pr_details", False)
+
     # Developer metrics
     developers: dict[str, DeveloperMetrics] = {}
 
@@ -754,6 +760,8 @@ def analyze_data(data: dict[str, Any], since: str) -> tuple[pd.DataFrame, pd.Dat
             if pr_created >= since_date or pr_updated >= since_date:
                 dev = get_developer(user["login"])
                 dev.prs_opened += 1
+                # Track repository for this developer
+                dev.repositories[repo_name] = dev.repositories.get(repo_name, 0) + 1
 
                 if pr.get("merged_at"):
                     merged_at = parse_github_date(pr["merged_at"])
@@ -800,7 +808,19 @@ def analyze_data(data: dict[str, Any], since: str) -> tuple[pd.DataFrame, pd.Dat
             metrics.branch_merges_count = len(branch_merge_times_for_repo)
 
         metrics.activity = repo_activity.get(repo_name, 0)
-        repo_metrics.append(metrics)
+
+        # Count PRs in time period
+        pr_count = 0
+        for pr in data.get("pull_requests", {}).get(repo_name, []):
+            pr_created = parse_github_date(pr["created_at"])
+            pr_updated = parse_github_date(pr["updated_at"])
+            if pr_created >= since_date or pr_updated >= since_date:
+                pr_count += 1
+        metrics.pr_count = pr_count
+
+        # Only include repos with activity in the time period
+        if metrics.activity > 0 or metrics.pr_count > 0:
+            repo_metrics.append(metrics)
 
     # Build DataFrames
     def format_repos_list(repos_dict: dict[str, int]) -> str:
@@ -818,37 +838,35 @@ def analyze_data(data: dict[str, Any], since: str) -> tuple[pd.DataFrame, pd.Dat
                 "Lines Added": dev.lines_added,
                 "Lines Deleted": dev.lines_deleted,
                 "PRs Opened": dev.prs_opened,
-                "PRs Reviewed": dev.prs_reviewed,
-                "PR Comments": dev.pr_comments,
+                "PRs Reviewed": dev.prs_reviewed if has_pr_details else "N/A",
+                "PR Comments": dev.pr_comments if has_pr_details else "N/A",
                 "Repositories": format_repos_list(dev.repositories),
             }
             for dev in developers.values()
         ]
     )
-    df_developers = df_developers.sort_values("Commits", ascending=False)
+    df_developers = df_developers.sort_values("Lines Added", ascending=False)
 
     df_repos = pd.DataFrame(
         [
             {
-                "name": m.name,
-                "Activity": m.activity,
-                "avg_branch_to_merge_time": m.avg_branch_to_merge_time,
-                "branch_merges_count": m.branch_merges_count,
-                "deployment_count": m.deployment_count,
-                "failure_rate": m.failure_rate,
-                "avg_recovery_time": m.avg_recovery_time,
-                "avg_deployment_duration": m.avg_deployment_duration,
-                "deployment_durations_count": m.deployment_durations_count,
-                "created_at": m.created_at,
-                "updated_at": m.updated_at,
-                "language": m.language,
-                "branch_count": m.branch_count,
-                "contributor_count": m.contributor_count,
+                "Repository": m.name,
+                "Commits": m.activity,
+                "PRs": m.pr_count,
+                "Lead Time (h)": round(m.avg_branch_to_merge_time, 1),
+                "Deploys": m.deployment_count,
+                "Fail %": round(m.failure_rate, 1),
+                "Deploy (m)": round(m.avg_deployment_duration, 1),
+                "Created": m.created_at,
+                "Updated": m.updated_at,
+                "Language": m.language,
+                "Branches": m.branch_count,
+                "Contributors": m.contributor_count,
             }
             for m in repo_metrics
         ]
     )
-    df_repos = df_repos.sort_values("Activity", ascending=False)
+    df_repos = df_repos.sort_values("Commits", ascending=False)
 
     # Print results
     avg_pr_merge = sum(pr_merge_times) / len(pr_merge_times) if pr_merge_times else 0
@@ -922,7 +940,7 @@ def main(
     target_repos: list[str] | None = None,
     use_cache: bool = False,
     update_cache: bool = False,
-    fetch_pr_details: bool = False,
+    fetch_pr_details: bool = True,
 ) -> None:
     """Main entry point for the GitHub metrics script.
 
@@ -993,7 +1011,7 @@ Examples:
         "--months", type=int, default=3, help="Months to analyze (default: 3)"
     )
     parser.add_argument(
-        "--repos", type=int, default=20, help="Max repos to analyze (default: 20)"
+        "--repos", type=int, default=None, help="Limit repos to analyze (default: all)"
     )
     parser.add_argument("--target-repos", nargs="+", help="Specific repos to analyze")
     parser.add_argument("--use-cache", action="store_true", help="Use cached data")
@@ -1002,7 +1020,7 @@ Examples:
         "-v", "--verbose", action="store_true", help="Enable debug logging"
     )
     parser.add_argument(
-        "--full", action="store_true", help="Fetch detailed PR reviews/comments (slow)"
+        "--fast", action="store_true", help="Skip PR reviews/comments (faster)"
     )
 
     args = parser.parse_args()
@@ -1021,8 +1039,10 @@ Examples:
 
     if args.target_repos:
         logger.info("Target repos: %s", ", ".join(args.target_repos))
-    else:
+    elif args.repos:
         logger.info("Analyzing top %d repos", args.repos)
+    else:
+        logger.info("Analyzing all repos")
 
     main(
         args.org,
@@ -1032,7 +1052,7 @@ Examples:
         target_repos=args.target_repos,
         use_cache=args.use_cache,
         update_cache=args.update_cache,
-        fetch_pr_details=args.full,
+        fetch_pr_details=not args.fast,
     )
 
 
