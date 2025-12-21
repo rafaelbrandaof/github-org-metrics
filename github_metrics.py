@@ -9,6 +9,7 @@ and DORA metrics.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -588,7 +589,9 @@ def _detect_ci_workflow(workflow_runs: dict[str, Any]) -> str | None:
     return None
 
 
-def analyze_data(data: dict[str, Any], since: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+def analyze_data(
+    data: dict[str, Any], since: str, anonymize: bool = False
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Analyze the fetched GitHub data.
 
     Args:
@@ -921,6 +924,12 @@ def analyze_data(data: dict[str, Any], since: str) -> tuple[pd.DataFrame, pd.Dat
             return
         # Remove repositories from console display
         df_disp = df.copy()
+
+        if anonymize and "Developer" in df_disp.columns:
+            df_disp["Developer"] = df_disp["Developer"].apply(
+                lambda x: f"user-{hashlib.md5(x.encode()).hexdigest()[:6]}"
+            )
+
         cols_to_drop = ["Repositories", "Repositories_Display"]
         df_disp = df_disp.drop(columns=[c for c in cols_to_drop if c in df_disp.columns])
 
@@ -1002,6 +1011,7 @@ def main(
     use_cache: bool = False,
     update_cache: bool = False,
     fetch_pr_details: bool = True,
+    anonymize: bool = False,
 ) -> None:
     """Main entry point for the GitHub metrics script.
 
@@ -1014,6 +1024,7 @@ def main(
         use_cache: Whether to use cached data.
         update_cache: Whether to refresh the cache.
         fetch_pr_details: If True, fetch per-PR reviews/comments (slow).
+        anonymize: If True, anonymize names in console output.
     """
     data: dict[str, Any] | None = None
 
@@ -1044,7 +1055,7 @@ def main(
     start_date = end_date - timedelta(days=30 * months)
     since = start_date.isoformat().replace("+00:00", "Z")
 
-    df_developers, df_repos, df_outliers = analyze_data(data, since)
+    df_developers, df_repos, df_outliers = analyze_data(data, since, anonymize=anonymize)
 
     # Save CSVs
     df_developers.to_csv(f"{org}_github_developer_metrics.csv", index=False)
@@ -1086,6 +1097,11 @@ Examples:
     parser.add_argument(
         "--fast", action="store_true", help="Skip PR reviews/comments (faster)"
     )
+    parser.add_argument(
+        "--anonymize",
+        action="store_true",
+        help="Anonymize developer names in console output (for screenshots)",
+    )
 
     args = parser.parse_args()
 
@@ -1117,6 +1133,7 @@ Examples:
         use_cache=args.use_cache,
         update_cache=args.update_cache,
         fetch_pr_details=not args.fast,
+        anonymize=args.anonymize,
     )
 
 
