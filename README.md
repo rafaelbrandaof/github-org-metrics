@@ -13,29 +13,9 @@ This Python script fetches and analyzes metrics for a specified GitHub organizat
 
 ## Prerequisites
 
-- Python 3.8 or higher
+- [uv](https://github.com/astral-sh/uv) - Fast Python package installer and resolver
 - Git (for cloning the repository)
 - GitHub Personal Access Token with appropriate permissions
-
-## Installing Python
-
-If you are on macos install homebrew if it's not already installed
-
-```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-Install python
-
-```
-brew install python
-```
-
-If you install python with homebrew then there's no need to install pip separately.
-However if you have a non-homebrew python installation then install pip with:
-```
-python3 -m pip install --upgrade pip
-```
 
 ## Installation and Setup
 
@@ -46,17 +26,10 @@ python3 -m pip install --upgrade pip
    cd github-org-metrics
    ```
 
-2. Create and activate a virtual environment:
+2. Install dependencies with uv:
 
    ```
-   python3 -m venv myenv
-   source myenv/bin/activate
-   ```
-
-3. Install the required dependencies:
-
-   ```
-   pip install -r requirements.txt
+   uv sync
    ```
 
 4. Set up your GitHub Personal Access Token:
@@ -81,10 +54,10 @@ python3 -m pip install --upgrade pip
 
 ## Usage
 
-Ensure your virtual environment is activated, then run the script using the following command:
+Run the script using `uv run`:
 
 ```
-python3 github_metrics.py <organization_name> [--months MONTHS] [--repos REPOS] [--use-cache] [--update-cache] [--target-repos REPOS]
+uv run github_metrics.py <organization_name> [--months MONTHS] [--repos REPOS] [--use-cache] [--update-cache] [--target-repos REPOS]
 ```
 
 Arguments:
@@ -100,23 +73,23 @@ Examples:
 
 - To fetch new data for an organization's top 20 repos in the last 3 months:
   ```
-  python3 github_metrics.py MyOrgName
+  uv run github_metrics.py MyOrgName
   ```
 - To analyze the top 10 repos from the last 6 months:
   ```
-  python3 github_metrics.py MyOrgName --months 6 --repos 10
+  uv run github_metrics.py MyOrgName --months 6 --repos 10
   ```
 - To use cached data (if available):
   ```
-  python3 github_metrics.py MyOrgName --use-cache
+  uv run github_metrics.py MyOrgName --use-cache
   ```
 - To update the cache with fresh data:
   ```
-  python3 github_metrics.py MyOrgName --update-cache
+  uv run github_metrics.py MyOrgName --update-cache
   ```
 - To analyze specific repositories:
   ```
-  python3 github_metrics.py MyOrgName --target-repos repo-a repo-b
+  uv run github_metrics.py MyOrgName --target-repos repo-a repo-b
   ```
 
 ## Output
@@ -168,7 +141,7 @@ If you encounter issues:
 3. For large organizations, consider reducing the number of repositories or the time range analyzed.
 4. If you're having dependency issues, try updating your dependencies:
    ```
-   pip install --upgrade -r requirements.txt
+   uv sync
    ```
 
 ## License

@@ -165,3 +165,6 @@ cython_debug/
 # Cached data
 *_cache.json
 *_metrics.csv
+
+# Ruff
+.ruff_cache/
