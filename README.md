@@ -5,6 +5,8 @@ A Python tool to fetch and analyze GitHub organization metrics, including develo
 ![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
 
+![Dashboard Screenshot](screenshot.png)
+
 ## Features
 
 ### Developer Metrics
