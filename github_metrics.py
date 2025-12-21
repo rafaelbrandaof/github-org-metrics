@@ -500,10 +500,23 @@ def fetch_data(
         data["branch_first_commits"][repo_name] = {}
 
         if fetch_pr_details:
-            total_prs = len(data["pull_requests"][repo_name])
-            logger.info("Fetching details for %d PRs in %s", total_prs, repo_name)
+            # Only fetch details for PRs within the time window
+            since_date = datetime.fromisoformat(since.replace("Z", "+00:00"))
+            recent_prs = [
+                pr
+                for pr in data["pull_requests"][repo_name]
+                if parse_github_date(pr["created_at"]) >= since_date
+                or parse_github_date(pr["updated_at"]) >= since_date
+            ]
+            total_prs = len(recent_prs)
+            logger.info(
+                "Fetching details for %d recent PRs in %s (of %d total)",
+                total_prs,
+                repo_name,
+                len(data["pull_requests"][repo_name]),
+            )
 
-            for idx, pr in enumerate(data["pull_requests"][repo_name]):
+            for idx, pr in enumerate(recent_prs):
                 pr_number = pr["number"]
 
                 if (idx + 1) % 20 == 0:
