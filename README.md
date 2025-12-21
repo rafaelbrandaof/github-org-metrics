@@ -100,6 +100,7 @@ uv run github_metrics.py <organization> [options]
 | `--use-cache` | Use cached data if available | - |
 | `--update-cache` | Refresh the cache with new data | - |
 | `--fast` | Skip PR reviews/comments (faster) | - |
+| `--anonymize` | Anonymize names in console (for screenshots) | - |
 | `-v, --verbose` | Enable debug logging | - |
 
 ### Examples
@@ -110,6 +111,9 @@ uv run github_metrics.py my-organization
 
 # Fast mode (skip PR reviews/comments)
 uv run github_metrics.py my-organization --fast
+
+# Anonymize output for screenshots
+uv run github_metrics.py my-organization --anonymize
 
 # Analyze specific repositories
 uv run github_metrics.py my-organization --target-repos api-service web-app
@@ -126,7 +130,7 @@ uv run github_metrics.py my-organization -v
 
 ## Output
 
-The script generates two CSV files:
+The script generates up to three CSV files:
 
 ### `<org>_github_developer_metrics.csv`
 
@@ -140,6 +144,9 @@ The script generates two CSV files:
 | PRs Reviewed | Pull requests reviewed |
 | PR Comments | Comments on pull requests |
 | Repositories | Top repositories contributed to |
+
+### `<org>_github_outliers.csv`
+Contains the same columns as Developer Metrics but isolates accounts with >100,000 lines added (typically generated files or bulk imports).
 
 ### `<org>_github_repository_metrics.csv`
 
