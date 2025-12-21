@@ -95,20 +95,21 @@ uv run github_metrics.py <organization> [options]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--months N` | Number of months to analyze | 3 |
-| `--repos N` | Maximum repositories (when not targeting specific repos) | 20 |
+| `--repos N` | Limit number of repositories | all |
 | `--target-repos A B C` | Analyze specific repositories only | - |
 | `--use-cache` | Use cached data if available | - |
 | `--update-cache` | Refresh the cache with new data | - |
+| `--fast` | Skip PR reviews/comments (faster) | - |
 | `-v, --verbose` | Enable debug logging | - |
 
 ### Examples
 
 ```bash
-# Analyze top 20 repos from the last 3 months
+# Analyze all repos from the last 3 months
 uv run github_metrics.py my-organization
 
-# Analyze last 6 months, top 10 repos
-uv run github_metrics.py my-organization --months 6 --repos 10
+# Fast mode (skip PR reviews/comments)
+uv run github_metrics.py my-organization --fast
 
 # Analyze specific repositories
 uv run github_metrics.py my-organization --target-repos api-service web-app
@@ -144,15 +145,18 @@ The script generates two CSV files:
 
 | Column | Description |
 |--------|-------------|
-| name | Repository name |
-| Activity | Number of commits in the period |
-| avg_branch_to_merge_time | Average hours from branch to merge |
-| deployment_count | Number of CI/CD deployments |
-| failure_rate | Percentage of failed deployments |
-| avg_deployment_duration | Average deployment time (minutes) |
-| language | Primary programming language |
-| branch_count | Number of branches |
-| contributor_count | Number of contributors |
+| Repository | Repository name |
+| Commits | Number of commits in the period |
+| PRs | Pull requests in the period |
+| Lead Time (h) | Average hours from branch to merge |
+| Deploys | Number of CI/CD deployments |
+| Fail % | Percentage of failed deployments |
+| Deploy (m) | Average deployment time (minutes) |
+| Created | Repository creation date |
+| Updated | Last update date |
+| Language | Primary programming language |
+| Branches | Number of branches |
+| Contributors | Number of contributors |
 
 ## Caching
 
