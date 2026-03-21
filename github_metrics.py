@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import logging
 import os
 import sys
@@ -867,7 +868,7 @@ def analyze_data(
             if not dev.name.endswith("[bot]")  # Exclude GitHub bots
         ]
     )
-    
+
     # Filter developers who did not add/remove code (as requested: "did not add or remove code")
     df_developers = df_developers[
         (df_developers["Lines Added"] > 0) | (df_developers["Lines Deleted"] > 0)
@@ -931,12 +932,16 @@ def analyze_data(
             )
 
         cols_to_drop = ["Repositories", "Repositories_Display"]
-        df_disp = df_disp.drop(columns=[c for c in cols_to_drop if c in df_disp.columns])
+        df_disp = df_disp.drop(
+            columns=[c for c in cols_to_drop if c in df_disp.columns]
+        )
 
         # Force left alignment for string columns
         formatters = {}
         for col in df_disp.columns:
-            if df_disp[col].dtype == "object" or pd.api.types.is_string_dtype(df_disp[col]):
+            if df_disp[col].dtype == "object" or pd.api.types.is_string_dtype(
+                df_disp[col]
+            ):
                 max_len = df_disp[col].astype(str).str.len().max()
                 # Determine max length for padding, defaulting to reasonable min
                 max_len = max(max_len, len(col)) if not pd.isna(max_len) else len(col)
@@ -1055,7 +1060,9 @@ def main(
     start_date = end_date - timedelta(days=30 * months)
     since = start_date.isoformat().replace("+00:00", "Z")
 
-    df_developers, df_repos, df_outliers = analyze_data(data, since, anonymize=anonymize)
+    df_developers, df_repos, df_outliers = analyze_data(
+        data, since, anonymize=anonymize
+    )
 
     # Save CSVs
     df_developers.to_csv(f"{org}_github_developer_metrics.csv", index=False)
@@ -1065,6 +1072,110 @@ def main(
         logger.info("Results saved to %s_github_*.csv (including outliers)", org)
     else:
         logger.info("Results saved to %s_github_*.csv", org)
+
+
+def get_metrics_for_dashboard(
+    org: str,
+    months: int,
+    token: str,
+    *,
+    target_repos: list[str] | None = None,
+    use_cache: bool = False,
+    update_cache: bool = False,
+    fetch_pr_details: bool = False,
+    anonymize: bool = False,
+) -> dict[str, Any]:
+    """Run analysis and return JSON-serializable metrics for web dashboards.
+
+    Mirrors the data path used by :func:`main` but returns structured data instead
+    of writing CSV files.
+    """
+    data: dict[str, Any] | None = None
+
+    if use_cache and not update_cache:
+        data = load_cache(org)
+        if data:
+            logger.info("Using cached data")
+            if target_repos:
+                data["repos"] = [r for r in data["repos"] if r["name"] in target_repos]
+                logger.info("Filtered cache to %d target repos", len(data["repos"]))
+        else:
+            logger.warning("Cache not found, fetching new data")
+
+    if data is None or update_cache:
+        end_date = datetime.now(timezone.utc)
+        start_date = end_date - timedelta(days=30 * months)
+        since = start_date.isoformat().replace("+00:00", "Z")
+
+        logger.info("Fetching data for organization: %s", org)
+        client = GitHubAPIClient(token)
+        data = fetch_data(
+            client, org, since, target_repos, fetch_pr_details=fetch_pr_details
+        )
+        save_cache(data, org)
+
+    end_date = datetime.now(timezone.utc)
+    start_date = end_date - timedelta(days=30 * months)
+    since = start_date.isoformat().replace("+00:00", "Z")
+
+    df_developers, df_repos, df_outliers = analyze_data(
+        data, since, anonymize=anonymize
+    )
+
+    def df_records(df: pd.DataFrame) -> list[dict[str, Any]]:
+        if df.empty:
+            return []
+        # Native JSON types (handles NaN as null)
+        return json.loads(df.to_json(orient="records", date_format="iso"))
+
+    total_deploys = int(df_repos["Deploys"].sum()) if not df_repos.empty else 0
+    fail_rates = (
+        df_repos["Fail %"].astype(float)
+        if not df_repos.empty
+        else pd.Series(dtype=float)
+    )
+
+    def _finite_float(x: Any) -> float:
+        try:
+            v = float(x)
+        except (TypeError, ValueError):
+            return 0.0
+        if math.isnan(v) or math.isinf(v):
+            return 0.0
+        return v
+
+    weighted_cfr = (
+        _finite_float((fail_rates * df_repos["Deploys"]).sum() / total_deploys)
+        if total_deploys > 0
+        else 0.0
+    )
+
+    summary = {
+        "organization": org,
+        "months": months,
+        "period_start": start_date.isoformat(),
+        "period_end": end_date.isoformat(),
+        "repository_count": len(data["repos"]),
+        "developer_count": len(df_developers),
+        "outlier_count": len(df_outliers),
+        "total_commits": int(df_repos["Commits"].sum()) if not df_repos.empty else 0,
+        "total_prs": int(df_repos["PRs"].sum()) if not df_repos.empty else 0,
+        "avg_lead_time_hours": _finite_float(df_repos["Lead Time (h)"].mean())
+        if not df_repos.empty
+        else 0.0,
+        "total_deployments": total_deploys,
+        "change_failure_rate_pct": round(weighted_cfr, 2),
+        "avg_deploy_minutes": _finite_float(df_repos["Deploy (m)"].mean())
+        if not df_repos.empty
+        else 0.0,
+    }
+
+    return {
+        "summary": summary,
+        "developers": df_records(df_developers),
+        "repositories": df_records(df_repos),
+        "outliers": df_records(df_outliers),
+    }
 
 
 def cli() -> None:
