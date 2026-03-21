@@ -1,0 +1,13 @@
+# Replit configuration — GitHub organization metrics dashboard
+# Set secrets: GITHUB_TOKEN, DASHBOARD_PASSWORD, FLASK_SECRET_KEY (optional)
+# Optional env: GITHUB_ORG, GITHUB_TARGET_REPOS (comma-separated), GITHUB_MONTHS
+
+run = "uv sync && uv run web_app.py"
+language = "python3"
+modules = ["python-3.12"]
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "uv sync && uv run web_app.py"]

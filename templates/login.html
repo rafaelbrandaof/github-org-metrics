@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Sign in · GitHub Metrics{% endblock %}
+{% block body_class %}page-login{% endblock %}
+{% block body %}
+<div class="login-shell">
+  <div class="login-brand">
+    <div class="logo-mark" aria-hidden="true">◆</div>
+    <h1>Delivery intelligence</h1>
+    <p class="muted">GitHub organization metrics, DORA signals, and contributor insight.</p>
+  </div>
+  <div class="login-card">
+    <div class="login-card-header">
+      <h2>Sign in</h2>
+      <p class="muted small">Use the dashboard password configured for this deployment.</p>
+    </div>
+    {% if error %}
+    <div class="alert alert-error" role="alert">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="{{ url_for('login') }}" class="login-form">
+      <label class="field">
+        <span>Password</span>
+        <input type="password" name="password" autocomplete="current-password" required autofocus>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">Continue</button>
+    </form>
+    <p class="muted tiny login-foot">Protected session · HTTPS recommended</p>
+  </div>
+</div>
+{% endblock %}

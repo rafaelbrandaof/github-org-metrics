@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · {{ dashboard_org }}{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+{% block body %}
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="logo-mark" aria-hidden="true">◆</span>
+      <div>
+        <div class="brand-title">Metrics</div>
+        <div class="brand-sub muted tiny">{{ dashboard_org }}</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" href="{{ url_for('dashboard') }}">Overview</a>
+      <span class="nav-label muted tiny">Repositories</span>
+      <ul class="repo-list">
+        {% for r in dashboard_repos %}
+        <li>{{ r }}</li>
+        {% endfor %}
+      </ul>
+    </nav>
+    <form class="sidebar-foot" method="post" action="{{ url_for('logout') }}">
+      <button type="submit" class="btn btn-ghost btn-block">Sign out</button>
+    </form>
+  </aside>
+  <main class="main">
+    <header class="main-header">
+      <div>
+        <h1>Organization dashboard</h1>
+        <p class="muted">Live metrics for the configured repositories and time window.</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn btn-secondary" id="btn-refresh" title="Refresh from GitHub (slower)">Refresh data</button>
+      </div>
+    </header>
+
+    {% if error %}
+    <div class="alert alert-error" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <div id="loading" class="loading hidden">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Fetching metrics from GitHub…</p>
+    </div>
+
+    <div id="load-error" class="alert alert-error hidden" role="alert"></div>
+
+    <section id="summary-section" class="hidden">
+      <div class="grid-stats" id="summary-cards"></div>
+    </section>
+
+    <section id="tables-section" class="hidden">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Repositories</h2>
+          <p class="muted small">Activity, lead time, and deployment signals per repo.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="table-repos">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Developers</h2>
+          <p class="muted small">Contributors with code changes in the selected window.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="table-devs">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+(function() {
+  const loading = document.getElementById('loading');
+  const errBox = document.getElementById('load-error');
+  const summarySection = document.getElementById('summary-section');
+  const tablesSection = document.getElementById('tables-section');
+  const summaryCards = document.getElementById('summary-cards');
+  const tableRepos = document.getElementById('table-repos');
+  const tableDevs = document.getElementById('table-devs');
+  const btnRefresh = document.getElementById('btn-refresh');
+
+  function show(el) { el.classList.remove('hidden'); }
+  function hide(el) { el.classList.add('hidden'); }
+
+  function fmtNum(n) {
+    if (n === null || n === undefined || Number.isNaN(n)) return '—';
+    return typeof n === 'number' ? n.toLocaleString(undefined, { maximumFractionDigits: 1 }) : n;
+  }
+
+  function buildSummary(summary) {
+    const cards = [
+      { label: 'Repositories', value: summary.repository_count },
+      { label: 'Developers', value: summary.developer_count },
+      { label: 'Commits', value: summary.total_commits },
+      { label: 'Pull requests', value: summary.total_prs },
+      { label: 'Avg lead time (h)', value: fmtNum(summary.avg_lead_time_hours) },
+      { label: 'Deployments', value: summary.total_deployments },
+      { label: 'Change failure rate', value: summary.total_deployments ? fmtNum(summary.change_failure_rate_pct) + '%' : '—' },
+      { label: 'Avg deploy (m)', value: fmtNum(summary.avg_deploy_minutes) },
+    ];
+    summaryCards.innerHTML = cards.map(c => `
+      <div class="stat-card">
+        <div class="stat-label">${c.label}</div>
+        <div class="stat-value">${c.value}</div>
+      </div>
+    `).join('');
+  }
+
+  function fillTable(table, rows, columns) {
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+    thead.innerHTML = '<tr>' + columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
+    tbody.innerHTML = rows.map(row => {
+      return '<tr>' + columns.map(c => `<td>${row[c] !== undefined && row[c] !== null ? row[c] : '—'}</td>`).join('') + '</tr>';
+    }).join('');
+  }
+
+  async function loadMetrics(refresh) {
+    hide(errBox);
+    show(loading);
+    hide(summarySection);
+    hide(tablesSection);
+    const q = new URLSearchParams();
+    if (refresh) {
+      q.set('update_cache', '1');
+      q.set('use_cache', '0');
+    } else {
+      q.set('use_cache', '1');
+    }
+    q.set('fast', '1');
+    const res = await fetch('/api/metrics?' + q.toString(), { credentials: 'same-origin' });
+    const data = await res.json().catch(() => ({}));
+    hide(loading);
+    if (!res.ok) {
+      show(errBox);
+      errBox.textContent = data.error || 'Failed to load metrics.';
+      return;
+    }
+    buildSummary(data.summary);
+    show(summarySection);
+    const repoCols = ['Repository', 'Commits', 'PRs', 'Lead Time (h)', 'Deploys', 'Fail %', 'Deploy (m)', 'Language'];
+    const devCols = ['Developer', 'Commits', 'Lines Added', 'Lines Deleted', 'PRs Opened', 'PRs Reviewed', 'PR Comments', 'Repositories'];
+    fillTable(tableRepos, data.repositories || [], repoCols);
+    fillTable(tableDevs, data.developers || [], devCols);
+    show(tablesSection);
+  }
+
+  btnRefresh.addEventListener('click', () => loadMetrics(true));
+  {% if not error %}
+  loadMetrics(false);
+  {% endif %}
+})();
+</script>
+{% endblock %}
