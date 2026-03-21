@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Metrics Dashboard - {{ org }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --bg-card: #161b22;
+            --border: #30363d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent: #58a6ff;
+            --accent-hover: #79c0ff;
+            --green: #3fb950;
+            --green-bg: rgba(63,185,80,.12);
+            --red: #f85149;
+            --red-bg: rgba(248,81,73,.12);
+            --orange: #d29922;
+            --orange-bg: rgba(210,153,34,.12);
+            --purple: #bc8cff;
+            --purple-bg: rgba(188,140,255,.12);
+            --blue: #58a6ff;
+            --blue-bg: rgba(88,166,255,.12);
+            --cyan: #39d2c0;
+            --cyan-bg: rgba(57,210,192,.12);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 20px 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-brand {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-brand svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--text-primary);
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand span {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 12px 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 14px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .nav-item.active { background: var(--bg-tertiary); color: var(--text-primary); }
+
+        .nav-item svg { width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
+
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .user-name { font-size: 13px; font-weight: 500; }
+        .user-role { font-size: 11px; color: var(--text-secondary); }
+
+        .btn-logout {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn-logout:hover { background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--text-secondary); }
+
+        /* Main Content */
+        .main {
+            margin-left: 240px;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            background: rgba(13,17,23,.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 50;
+        }
+
+        .topbar h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .org-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: var(--blue-bg);
+            border: 1px solid rgba(88,166,255,.2);
+            font-size: 13px;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .btn-refresh {
+            padding: 7px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-refresh:hover { border-color: var(--accent); }
+        .btn-refresh svg { width: 14px; height: 14px; fill: currentColor; }
+
+        .content { padding: 24px 28px; }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-card.blue::before { background: var(--accent); }
+        .stat-card.green::before { background: var(--green); }
+        .stat-card.orange::before { background: var(--orange); }
+        .stat-card.purple::before { background: var(--purple); }
+        .stat-card.red::before { background: var(--red); }
+        .stat-card.cyan::before { background: var(--cyan); }
+
+        .stat-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .stat-card.blue .stat-value { color: var(--accent); }
+        .stat-card.green .stat-value { color: var(--green); }
+        .stat-card.orange .stat-value { color: var(--orange); }
+        .stat-card.purple .stat-value { color: var(--purple); }
+        .stat-card.red .stat-value { color: var(--red); }
+        .stat-card.cyan .stat-value { color: var(--cyan); }
+
+        .stat-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .panel-body { padding: 0; }
+        .panel-body.padded { padding: 20px; }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            padding: 16px;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table thead th {
+            text-align: left;
+            padding: 10px 16px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        .data-table thead th:hover {
+            color: var(--text-primary);
+        }
+
+        .data-table thead th .sort-icon {
+            margin-left: 4px;
+            opacity: 0.3;
+        }
+
+        .data-table thead th.sorted .sort-icon {
+            opacity: 1;
+            color: var(--accent);
+        }
+
+        .data-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.1s;
+        }
+
+        .data-table tbody tr:last-child { border-bottom: none; }
+        .data-table tbody tr:hover { background: rgba(88,166,255,.04); }
+
+        .data-table td {
+            padding: 10px 16px;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .data-table .dev-name { font-weight: 500; }
+        .data-table .repo-name { font-weight: 500; color: var(--accent); }
+        .data-table .repos-list { color: var(--text-secondary); font-size: 12px; max-width: 240px; white-space: normal; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-lang {
+            background: var(--purple-bg);
+            color: var(--purple);
+            border: 1px solid rgba(188,140,255,.2);
+        }
+
+        /* DORA Cards */
+        .dora-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .dora-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .dora-card .dora-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .dora-card .dora-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dora-card .dora-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .dora-card .dora-unit {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .section-header h2 {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .section-header .section-count {
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--bg-tertiary);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { background: var(--green); color: #fff; }
+        .toast.error { background: var(--red); color: #fff; }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state svg { width: 48px; height: 48px; fill: var(--text-muted); margin-bottom: 16px; }
+        .empty-state h3 { font-size: 16px; color: var(--text-primary); margin-bottom: 8px; }
+        .empty-state p { font-size: 14px; }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 1200px) {
+            .charts-grid { grid-template-columns: 1fr; }
+            .dora-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .dora-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span>GitHub Metrics</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#overview" class="nav-item active" onclick="scrollToSection('overview', this)">
+                <svg viewBox="0 0 16 16"><path d="M6.5 1.75a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v1.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-1.5zm3 4a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v1.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-1.5zM1.75 5A.75.75 0 001 5.75v1.5c0 .414.336.75.75.75h1.5A.75.75 0 004 7.25v-1.5A.75.75 0 003.25 5h-1.5zm0 4a.75.75 0 00-.75.75v1.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75v-1.5A.75.75 0 003.25 9h-1.5zm4 0a.75.75 0 00-.75.75v1.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75v-1.5a.75.75 0 00-.75-.75h-1.5zm4 0a.75.75 0 00-.75.75v1.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75v-1.5a.75.75 0 00-.75-.75h-1.5z"/></svg>
+                Overview
+            </a>
+            <a href="#dora" class="nav-item" onclick="scrollToSection('dora', this)">
+                <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm3.25 8.75H8a.75.75 0 01-.75-.75V3.25a.75.75 0 011.5 0V7.25h2.5a.75.75 0 010 1.5z"/></svg>
+                DORA Metrics
+            </a>
+            <a href="#developers" class="nav-item" onclick="scrollToSection('developers', this)">
+                <svg viewBox="0 0 16 16"><path d="M10.561 8.073a6.005 6.005 0 013.432 5.142.75.75 0 11-1.498.07 4.5 4.5 0 00-8.99 0 .75.75 0 11-1.498-.07 6.004 6.004 0 013.431-5.142 3.999 3.999 0 115.123 0zM10.5 5a2.5 2.5 0 10-5 0 2.5 2.5 0 005 0z"/></svg>
+                Developers
+            </a>
+            <a href="#repositories" class="nav-item" onclick="scrollToSection('repositories', this)">
+                <svg viewBox="0 0 16 16"><path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 010-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/></svg>
+                Repositories
+            </a>
+            <a href="#charts" class="nav-item" onclick="scrollToSection('charts', this)">
+                <svg viewBox="0 0 16 16"><path d="M1.5 14.25V1.75a.25.25 0 00-.25-.25H.75a.75.75 0 010-1.5h.5A1.75 1.75 0 013 1.75v11.5h11.25a.75.75 0 010 1.5H2.75a1.25 1.25 0 01-1.25-1.25zM14.5 1.75a.75.75 0 00-1.5 0v8.5a.75.75 0 001.5 0v-8.5zm-6 4a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0v-4.5zm-3 2a.75.75 0 00-1.5 0v2.5a.75.75 0 001.5 0v-2.5zm6-1a.75.75 0 00-1.5 0v3.5a.75.75 0 001.5 0v-3.5z"/></svg>
+                Charts
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">{{ username[0]|upper }}</div>
+                <div>
+                    <div class="user-name">{{ username }}</div>
+                    <div class="user-role">Administrator</div>
+                </div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="btn-logout">Sign Out</a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="topbar">
+            <h1>Organization Dashboard</h1>
+            <div class="topbar-actions">
+                <div class="org-badge">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 16A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.75.75 0 11.832-1.248l1.064.71c.487.325.793.871.793 1.458v6.456A1.75 1.75 0 0114.25 16h-3.5a.75.75 0 01-.197-.026c-.099.017-.2.026-.303.026h-3a.75.75 0 01-.75-.75V14h-1v1.25a.75.75 0 01-.75.75h-3zm0-1.5h1.5a.25.25 0 00.25-.25V14h5v.25c0 .138.112.25.25.25h1.5V1.75a.25.25 0 00-.25-.25h-8.5a.25.25 0 00-.25.25v12.5c0 .138.112.25.25.25zM3.75 6h.5a.75.75 0 010 1.5h-.5a.75.75 0 010-1.5zM3 3.75A.75.75 0 013.75 3h.5a.75.75 0 010 1.5h-.5A.75.75 0 013 3.75zM3.75 9h.5a.75.75 0 010 1.5h-.5a.75.75 0 010-1.5zM7.75 6h.5a.75.75 0 010 1.5h-.5a.75.75 0 010-1.5zM7 3.75A.75.75 0 017.75 3h.5a.75.75 0 010 1.5h-.5A.75.75 0 017 3.75zM7.75 9h.5a.75.75 0 010 1.5h-.5a.75.75 0 010-1.5z"/></svg>
+                    {{ org }}
+                </div>
+                <button class="btn-refresh" onclick="refreshData()" id="refreshBtn">
+                    <svg viewBox="0 0 16 16"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5zM1.705 8.005a.75.75 0 01.834.656 5.501 5.501 0 009.592 2.97l-1.204-1.204a.25.25 0 01.177-.427h3.646a.25.25 0 01.25.25v3.646a.25.25 0 01-.427.177l-1.38-1.38A7.001 7.001 0 011.05 8.84a.75.75 0 01.656-.834z"/></svg>
+                    Refresh Data
+                </button>
+            </div>
+        </div>
+
+        <div class="content">
+            {% if not data.repos and not data.developers %}
+            <div class="empty-state">
+                <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm3.25 8.75H8a.75.75 0 01-.75-.75V3.25a.75.75 0 011.5 0V7.25h2.5a.75.75 0 010 1.5z"/></svg>
+                <h3>No metrics data yet</h3>
+                <p>Click "Refresh Data" to fetch metrics from GitHub, or run the CLI tool first.</p>
+            </div>
+            {% else %}
+
+            <!-- Overview Stats -->
+            <section id="overview">
+                <div class="stats-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-label">Repositories</div>
+                        <div class="stat-value">{{ data.summary.total_repos }}</div>
+                        <div class="stat-sub">Active in period</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-label">Total Commits</div>
+                        <div class="stat-value">{{ "{:,}".format(data.summary.total_commits) }}</div>
+                        <div class="stat-sub">Last 3 months</div>
+                    </div>
+                    <div class="stat-card purple">
+                        <div class="stat-label">Pull Requests</div>
+                        <div class="stat-value">{{ "{:,}".format(data.summary.total_prs) }}</div>
+                        <div class="stat-sub">Opened / updated</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-label">Developers</div>
+                        <div class="stat-value">{{ data.summary.total_devs }}</div>
+                        <div class="stat-sub">Active contributors</div>
+                    </div>
+                    <div class="stat-card cyan">
+                        <div class="stat-label">Deployments</div>
+                        <div class="stat-value">{{ "{:,}".format(data.summary.total_deploys) }}</div>
+                        <div class="stat-sub">CI/CD runs</div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="stat-label">Avg Lead Time</div>
+                        <div class="stat-value">{{ data.summary.avg_lead_time }}h</div>
+                        <div class="stat-sub">Branch to merge</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DORA Metrics -->
+            <section id="dora">
+                <div class="section-header">
+                    <h2>DORA Metrics</h2>
+                </div>
+                <div class="dora-grid">
+                    <div class="dora-card">
+                        <div class="dora-icon" style="background: var(--blue-bg);">⏱️</div>
+                        <div class="dora-label">Lead Time</div>
+                        <div class="dora-value" style="color: var(--accent);">{{ data.summary.avg_lead_time }}</div>
+                        <div class="dora-unit">hours (avg)</div>
+                    </div>
+                    <div class="dora-card">
+                        <div class="dora-icon" style="background: var(--green-bg);">🚀</div>
+                        <div class="dora-label">Deploy Frequency</div>
+                        <div class="dora-value" style="color: var(--green);">{{ data.summary.total_deploys }}</div>
+                        <div class="dora-unit">total deployments</div>
+                    </div>
+                    <div class="dora-card">
+                        <div class="dora-icon" style="background: var(--red-bg);">❌</div>
+                        <div class="dora-label">Change Failure Rate</div>
+                        <div class="dora-value" style="color: var(--red);">{{ data.summary.avg_fail_rate }}%</div>
+                        <div class="dora-unit">of deployments</div>
+                    </div>
+                    <div class="dora-card">
+                        <div class="dora-icon" style="background: var(--orange-bg);">🔧</div>
+                        <div class="dora-label">Avg Deploy Time</div>
+                        <div class="dora-value" style="color: var(--orange);">{{ data.summary.avg_deploy_time }}</div>
+                        <div class="dora-unit">minutes</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts -->
+            <section id="charts">
+                <div class="section-header">
+                    <h2>Analytics</h2>
+                </div>
+                <div class="charts-grid">
+                    <div class="panel">
+                        <div class="panel-header"><span class="panel-title">Commits by Repository</span></div>
+                        <div class="chart-container"><canvas id="commitsChart"></canvas></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header"><span class="panel-title">Pull Requests by Repository</span></div>
+                        <div class="chart-container"><canvas id="prsChart"></canvas></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header"><span class="panel-title">Top Contributors (Lines Added)</span></div>
+                        <div class="chart-container"><canvas id="devsChart"></canvas></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header"><span class="panel-title">Repository Lead Times</span></div>
+                        <div class="chart-container"><canvas id="leadTimeChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Developer Activity -->
+            <section id="developers">
+                <div class="section-header">
+                    <h2>Developer Activity</h2>
+                    <span class="section-count">{{ data.developers|length }} developers</span>
+                </div>
+                <div class="panel">
+                    <div class="panel-body">
+                        <table class="data-table" id="devTable">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable('devTable', 0, 'string')">Developer <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('devTable', 1, 'number')">Commits <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('devTable', 2, 'number')">Lines Added <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('devTable', 3, 'number')">Lines Deleted <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('devTable', 4, 'number')">PRs Opened <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('devTable', 5, 'string')">PRs Reviewed <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('devTable', 6, 'string')">PR Comments <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('devTable', 7, 'string')">Repositories <span class="sort-icon">↕</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dev in data.developers %}
+                                <tr>
+                                    <td class="dev-name">{{ dev.Developer }}</td>
+                                    <td class="num">{{ "{:,}".format(dev.Commits) }}</td>
+                                    <td class="num" style="color: var(--green);">+{{ "{:,}".format(dev['Lines Added']) }}</td>
+                                    <td class="num" style="color: var(--red);">-{{ "{:,}".format(dev['Lines Deleted']) }}</td>
+                                    <td class="num">{{ dev['PRs Opened'] }}</td>
+                                    <td class="num">{{ dev['PRs Reviewed'] }}</td>
+                                    <td class="num">{{ dev['PR Comments'] }}</td>
+                                    <td class="repos-list">{{ dev.get('Repositories', '') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Repository Metrics -->
+            <section id="repositories">
+                <div class="section-header">
+                    <h2>Repository Metrics</h2>
+                    <span class="section-count">{{ data.repos|length }} repositories</span>
+                </div>
+                <div class="panel">
+                    <div class="panel-body">
+                        <table class="data-table" id="repoTable">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable('repoTable', 0, 'string')">Repository <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('repoTable', 1, 'number')">Commits <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('repoTable', 2, 'number')">PRs <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('repoTable', 3, 'number')">Lead Time (h) <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('repoTable', 4, 'number')">Deploys <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('repoTable', 5, 'number')">Fail % <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('repoTable', 6, 'number')">Deploy (m) <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('repoTable', 7, 'string')">Language <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('repoTable', 8, 'number')">Branches <span class="sort-icon">↕</span></th>
+                                    <th onclick="sortTable('repoTable', 9, 'number')">Contributors <span class="sort-icon">↕</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for repo in data.repos %}
+                                <tr>
+                                    <td class="repo-name">{{ repo.Repository }}</td>
+                                    <td class="num">{{ repo.Commits }}</td>
+                                    <td class="num">{{ repo.PRs }}</td>
+                                    <td class="num">{{ repo['Lead Time (h)'] }}</td>
+                                    <td class="num">{{ repo.Deploys }}</td>
+                                    <td class="num">{{ repo['Fail %'] }}%</td>
+                                    <td class="num">{{ repo['Deploy (m)'] }}</td>
+                                    <td><span class="badge badge-lang">{{ repo.Language }}</span></td>
+                                    <td class="num">{{ repo.Branches }}</td>
+                                    <td class="num">{{ repo.Contributors }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            {% endif %}
+        </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const repoData = {{ data.repos | tojson }};
+        const devData = {{ data.developers | tojson }};
+
+        const CHART_COLORS = [
+            '#58a6ff', '#3fb950', '#bc8cff', '#d29922', '#f85149',
+            '#39d2c0', '#f778ba', '#79c0ff', '#7ee787', '#d2a8ff'
+        ];
+
+        Chart.defaults.color = '#8b949e';
+        Chart.defaults.borderColor = '#30363d';
+        Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+        if (repoData.length > 0) {
+            // Commits by Repo
+            new Chart(document.getElementById('commitsChart'), {
+                type: 'bar',
+                data: {
+                    labels: repoData.map(r => r.Repository.replace('qomitto-', '')),
+                    datasets: [{
+                        label: 'Commits',
+                        data: repoData.map(r => r.Commits),
+                        backgroundColor: CHART_COLORS.map(c => c + '40'),
+                        borderColor: CHART_COLORS,
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#21262d' } },
+                        x: { grid: { display: false }, ticks: { maxRotation: 45 } }
+                    }
+                }
+            });
+
+            // PRs by Repo
+            new Chart(document.getElementById('prsChart'), {
+                type: 'bar',
+                data: {
+                    labels: repoData.map(r => r.Repository.replace('qomitto-', '')),
+                    datasets: [{
+                        label: 'Pull Requests',
+                        data: repoData.map(r => r.PRs),
+                        backgroundColor: CHART_COLORS.map(c => c + '40'),
+                        borderColor: CHART_COLORS,
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#21262d' } },
+                        x: { grid: { display: false }, ticks: { maxRotation: 45 } }
+                    }
+                }
+            });
+
+            // Lead Times
+            new Chart(document.getElementById('leadTimeChart'), {
+                type: 'bar',
+                data: {
+                    labels: repoData.map(r => r.Repository.replace('qomitto-', '')),
+                    datasets: [{
+                        label: 'Lead Time (hours)',
+                        data: repoData.map(r => r['Lead Time (h)']),
+                        backgroundColor: repoData.map(r => {
+                            const lt = r['Lead Time (h)'];
+                            if (lt <= 24) return '#3fb95060';
+                            if (lt <= 72) return '#d2992260';
+                            return '#f8514960';
+                        }),
+                        borderColor: repoData.map(r => {
+                            const lt = r['Lead Time (h)'];
+                            if (lt <= 24) return '#3fb950';
+                            if (lt <= 72) return '#d29922';
+                            return '#f85149';
+                        }),
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#21262d' }, title: { display: true, text: 'Hours' } },
+                        x: { grid: { display: false }, ticks: { maxRotation: 45 } }
+                    }
+                }
+            });
+        }
+
+        if (devData.length > 0) {
+            const topDevs = devData.slice(0, 10);
+            new Chart(document.getElementById('devsChart'), {
+                type: 'horizontalBar' in Chart ? 'horizontalBar' : 'bar',
+                data: {
+                    labels: topDevs.map(d => d.Developer),
+                    datasets: [{
+                        label: 'Lines Added',
+                        data: topDevs.map(d => d['Lines Added']),
+                        backgroundColor: '#3fb95040',
+                        borderColor: '#3fb950',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: '#21262d' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Table sorting
+        function sortTable(tableId, colIdx, type) {
+            const table = document.getElementById(tableId);
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.rows);
+            const th = table.querySelectorAll('thead th')[colIdx];
+            const asc = th.dataset.sort !== 'asc';
+
+            table.querySelectorAll('thead th').forEach(h => {
+                h.classList.remove('sorted');
+                delete h.dataset.sort;
+            });
+            th.classList.add('sorted');
+            th.dataset.sort = asc ? 'asc' : 'desc';
+
+            rows.sort((a, b) => {
+                let va = a.cells[colIdx].textContent.trim();
+                let vb = b.cells[colIdx].textContent.trim();
+                if (type === 'number') {
+                    va = parseFloat(va.replace(/[,+\-%]/g, '')) || 0;
+                    vb = parseFloat(vb.replace(/[,+\-%]/g, '')) || 0;
+                }
+                if (va < vb) return asc ? -1 : 1;
+                if (va > vb) return asc ? 1 : -1;
+                return 0;
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        // Scroll nav
+        function scrollToSection(id, el) {
+            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        // Refresh
+        async function refreshData() {
+            const btn = document.getElementById('refreshBtn');
+            btn.innerHTML = '<span class="spinner"></span> Refreshing...';
+            btn.disabled = true;
+
+            try {
+                const resp = await fetch('/api/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ org: '{{ org }}' })
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    showToast('Data refreshed! Reloading...', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('Error: ' + data.message, 'error');
+                }
+            } catch (e) {
+                showToast('Network error', 'error');
+            } finally {
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5zM1.705 8.005a.75.75 0 01.834.656 5.501 5.501 0 009.592 2.97l-1.204-1.204a.25.25 0 01.177-.427h3.646a.25.25 0 01.25.25v3.646a.25.25 0 01-.427.177l-1.38-1.38A7.001 7.001 0 011.05 8.84a.75.75 0 01.656-.834z"/></svg> Refresh Data';
+                btn.disabled = false;
+            }
+        }
+
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
