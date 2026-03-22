@@ -4,531 +4,326 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ org }} — Metrics Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
         *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
         :root{
-            --bg:#09090b;--bg-card:#18181b;--bg-card-hover:#1f1f23;--bg-elevated:#27272a;
-            --border:#27272a;--border-subtle:#1f1f23;
-            --text:#fafafa;--text-secondary:#a1a1aa;--text-muted:#71717a;
-            --accent:#6366f1;--accent-light:#818cf8;--accent-glow:rgba(99,102,241,.15);
-            --green:#22c55e;--green-bg:rgba(34,197,94,.1);--green-border:rgba(34,197,94,.2);
-            --red:#ef4444;--red-bg:rgba(239,68,68,.1);--red-border:rgba(239,68,68,.2);
-            --amber:#f59e0b;--amber-bg:rgba(245,158,11,.1);--amber-border:rgba(245,158,11,.2);
-            --blue:#3b82f6;--blue-bg:rgba(59,130,246,.1);--blue-border:rgba(59,130,246,.2);
-            --purple:#a855f7;--purple-bg:rgba(168,85,247,.1);--purple-border:rgba(168,85,247,.2);
-            --cyan:#06b6d4;--cyan-bg:rgba(6,182,212,.1);--cyan-border:rgba(6,182,212,.2);
-            --rose:#f43f5e;--rose-bg:rgba(244,63,94,.1);
-            --radius:12px;--radius-sm:8px;--radius-xs:6px;
+            --bg:#050510;--surface:rgba(255,255,255,.03);--surface-hover:rgba(255,255,255,.06);
+            --glass:rgba(255,255,255,.04);--glass-border:rgba(255,255,255,.07);
+            --text:#fff;--text-2:rgba(255,255,255,.6);--text-3:rgba(255,255,255,.35);
+            --violet:#6c5ce7;--violet-l:#a78bfa;--violet-glow:rgba(108,92,231,.25);
+            --blue:#3b82f6;--cyan:#06b6d4;--emerald:#10b981;--amber:#f59e0b;
+            --rose:#f43f5e;--pink:#ec4899;--orange:#f97316;
+            --radius:16px;--radius-sm:12px;--radius-xs:8px;
         }
-        body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+        body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
         .layout{display:flex;min-height:100vh}
 
-        /* Sidebar */
-        .sidebar{width:260px;background:var(--bg-card);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;z-index:100}
-        .sidebar-brand{padding:24px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
-        .brand-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#a855f7);display:flex;align-items:center;justify-content:center}
-        .brand-icon svg{width:20px;height:20px;fill:#fff}
-        .brand-text{font-size:15px;font-weight:700;letter-spacing:-.3px}
-        .brand-sub{font-size:11px;color:var(--text-muted);font-weight:400}
-        .sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:2px}
-        .nav-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;text-decoration:none;border:1px solid transparent}
-        .nav-link:hover{background:var(--bg-elevated);color:var(--text)}
-        .nav-link.active{background:var(--accent-glow);color:var(--accent-light);border-color:rgba(99,102,241,.15)}
-        .nav-link svg{width:16px;height:16px;fill:currentColor;opacity:.7;flex-shrink:0}
-        .nav-link.active svg{opacity:1}
-        .nav-sep{height:1px;background:var(--border);margin:8px 0}
-        .sidebar-footer{padding:16px 16px 20px;border-top:1px solid var(--border)}
-        .user-pill{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-sm);transition:background .15s}
-        .user-pill:hover{background:var(--bg-elevated)}
-        .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#a855f7);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;flex-shrink:0}
-        .user-meta{flex:1;min-width:0}
-        .user-meta .name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .user-meta .role{font-size:11px;color:var(--text-muted)}
-        .btn-signout{display:block;width:100%;padding:8px;margin-top:10px;border:1px solid var(--border);border-radius:var(--radius-xs);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;text-align:center;text-decoration:none;font-family:inherit}
-        .btn-signout:hover{background:var(--bg-elevated);color:var(--text);border-color:var(--text-muted)}
+        /* ── Sidebar ── */
+        .sidebar{width:260px;position:fixed;top:0;bottom:0;z-index:100;display:flex;flex-direction:column;background:rgba(10,10,25,.9);border-right:1px solid var(--glass-border);backdrop-filter:blur(24px)}
+        .sidebar-brand{padding:28px 22px 24px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--glass-border)}
+        .brand-mark{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#6c5ce7,#ec4899);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(108,92,231,.35)}
+        .brand-mark svg{width:20px;height:20px;fill:#fff}
+        .brand-label{font-size:15px;font-weight:800;letter-spacing:-.3px}
+        .brand-sub{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+        .sidebar-nav{flex:1;padding:18px 14px;display:flex;flex-direction:column;gap:2px}
+        .nav-a{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:var(--radius-sm);color:var(--text-2);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;text-decoration:none;border:1px solid transparent}
+        .nav-a:hover{background:var(--surface-hover);color:var(--text)}
+        .nav-a.on{background:linear-gradient(135deg,rgba(108,92,231,.15),rgba(236,72,153,.08));color:#c4b5fd;border-color:rgba(108,92,231,.2);box-shadow:0 0 20px rgba(108,92,231,.08)}
+        .nav-a svg{width:16px;height:16px;fill:currentColor;opacity:.6;flex-shrink:0}
+        .nav-a.on svg{opacity:1;fill:#c4b5fd}
+        .sep{height:1px;background:var(--glass-border);margin:10px 0}
+        .sidebar-foot{padding:18px 18px 22px;border-top:1px solid var(--glass-border)}
+        .user-row{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+        .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#6c5ce7,#ec4899);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+        .u-name{font-size:13px;font-weight:600}.u-role{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px}
+        .btn-out{display:block;width:100%;padding:9px;border:1px solid var(--glass-border);border-radius:var(--radius-xs);background:transparent;color:var(--text-3);font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;text-align:center;text-decoration:none;font-family:inherit}
+        .btn-out:hover{background:var(--surface-hover);color:var(--text);border-color:rgba(255,255,255,.15)}
 
-        /* Main */
+        /* ── Main ── */
         .main{margin-left:260px;flex:1;min-width:0}
-        .topbar{position:sticky;top:0;z-index:50;background:rgba(9,9,11,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between}
-        .topbar-title{font-size:15px;font-weight:600;letter-spacing:-.2px}
-        .topbar-actions{display:flex;align-items:center;gap:10px}
-        .org-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--accent-glow);border:1px solid rgba(99,102,241,.2);font-size:12px;color:var(--accent-light);font-weight:500}
-        .org-chip svg{width:12px;height:12px;fill:currentColor}
-        .btn{padding:7px 14px;border:1px solid var(--border);border-radius:var(--radius-xs);background:var(--bg-card);color:var(--text);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
-        .btn:hover{border-color:var(--text-muted);background:var(--bg-elevated)}
+        .topbar{position:sticky;top:0;z-index:50;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;background:rgba(5,5,16,.75);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border)}
+        .topbar-title{font-size:15px;font-weight:700;letter-spacing:-.2px}
+        .topbar-right{display:flex;align-items:center;gap:12px}
+        .chip{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:linear-gradient(135deg,rgba(108,92,231,.15),rgba(236,72,153,.08));border:1px solid rgba(108,92,231,.2);color:#c4b5fd}
+        .chip svg{width:12px;height:12px;fill:currentColor}
+        .btn{padding:8px 16px;border:1px solid var(--glass-border);border-radius:var(--radius-xs);background:var(--glass);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px;font-family:inherit;backdrop-filter:blur(8px)}
+        .btn:hover{border-color:rgba(255,255,255,.15);background:var(--surface-hover);box-shadow:0 4px 16px rgba(0,0,0,.3)}
         .btn svg{width:14px;height:14px;fill:currentColor}
-        .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
-        .btn-primary:hover{background:var(--accent-light);border-color:var(--accent-light)}
+        .content{padding:32px 36px 64px}
 
-        .content{padding:28px 32px 48px}
+        /* ── Vivid Stat Cards ── */
+        .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:36px}
+        .kpi{position:relative;border-radius:var(--radius);padding:22px 20px;overflow:hidden;border:1px solid transparent;transition:transform .2s,box-shadow .2s}
+        .kpi:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+        .kpi-bg{position:absolute;inset:0;opacity:.12;z-index:0}
+        .kpi-inner{position:relative;z-index:1}
+        .kpi-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:16px;backdrop-filter:blur(8px)}
+        .kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+        .kpi-val{font-size:30px;font-weight:900;letter-spacing:-1px;line-height:1}
+        .kpi-sub{font-size:11px;margin-top:6px;opacity:.5}
+        .kpi.v-violet{background:linear-gradient(135deg,rgba(108,92,231,.12),rgba(108,92,231,.04));border-color:rgba(108,92,231,.2)}
+        .kpi.v-violet .kpi-bg{background:radial-gradient(circle at 80% 20%,#6c5ce7,transparent 70%)}
+        .kpi.v-violet .kpi-icon{background:rgba(108,92,231,.2)}.kpi.v-violet .kpi-label{color:#a78bfa}.kpi.v-violet .kpi-val{color:#c4b5fd}
+        .kpi.v-emerald{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(16,185,129,.04));border-color:rgba(16,185,129,.2)}
+        .kpi.v-emerald .kpi-bg{background:radial-gradient(circle at 80% 20%,#10b981,transparent 70%)}
+        .kpi.v-emerald .kpi-icon{background:rgba(16,185,129,.2)}.kpi.v-emerald .kpi-label{color:#6ee7b7}.kpi.v-emerald .kpi-val{color:#a7f3d0}
+        .kpi.v-pink{background:linear-gradient(135deg,rgba(236,72,153,.12),rgba(236,72,153,.04));border-color:rgba(236,72,153,.2)}
+        .kpi.v-pink .kpi-bg{background:radial-gradient(circle at 80% 20%,#ec4899,transparent 70%)}
+        .kpi.v-pink .kpi-icon{background:rgba(236,72,153,.2)}.kpi.v-pink .kpi-label{color:#f9a8d4}.kpi.v-pink .kpi-val{color:#fbcfe8}
+        .kpi.v-cyan{background:linear-gradient(135deg,rgba(6,182,212,.12),rgba(6,182,212,.04));border-color:rgba(6,182,212,.2)}
+        .kpi.v-cyan .kpi-bg{background:radial-gradient(circle at 80% 20%,#06b6d4,transparent 70%)}
+        .kpi.v-cyan .kpi-icon{background:rgba(6,182,212,.2)}.kpi.v-cyan .kpi-label{color:#67e8f9}.kpi.v-cyan .kpi-val{color:#a5f3fc}
+        .kpi.v-amber{background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(245,158,11,.04));border-color:rgba(245,158,11,.2)}
+        .kpi.v-amber .kpi-bg{background:radial-gradient(circle at 80% 20%,#f59e0b,transparent 70%)}
+        .kpi.v-amber .kpi-icon{background:rgba(245,158,11,.2)}.kpi.v-amber .kpi-label{color:#fcd34d}.kpi.v-amber .kpi-val{color:#fde68a}
+        .kpi.v-rose{background:linear-gradient(135deg,rgba(244,63,94,.12),rgba(244,63,94,.04));border-color:rgba(244,63,94,.2)}
+        .kpi.v-rose .kpi-bg{background:radial-gradient(circle at 80% 20%,#f43f5e,transparent 70%)}
+        .kpi.v-rose .kpi-icon{background:rgba(244,63,94,.2)}.kpi.v-rose .kpi-label{color:#fda4af}.kpi.v-rose .kpi-val{color:#fecdd3}
 
-        /* Metric Cards */
-        .metrics-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:28px}
-        .metric-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;transition:border-color .2s,box-shadow .2s}
-        .metric-card:hover{border-color:var(--text-muted);box-shadow:0 4px 24px rgba(0,0,0,.2)}
-        .metric-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:16px}
-        .metric-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--text-muted);margin-bottom:6px}
-        .metric-value{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1}
-        .metric-sub{font-size:11px;color:var(--text-muted);margin-top:6px}
+        /* ── DORA ── */
+        .dora-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px}
+        .dora{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);padding:28px 24px;text-align:center;position:relative;overflow:hidden;transition:border-color .2s}
+        .dora:hover{border-color:rgba(255,255,255,.12)}
+        .dora::before{content:'';position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:120px;height:120px;border-radius:50%;filter:blur(50px);opacity:.15}
+        .dora:nth-child(1)::before{background:#6c5ce7}.dora:nth-child(2)::before{background:#10b981}.dora:nth-child(3)::before{background:#f43f5e}.dora:nth-child(4)::before{background:#f59e0b}
+        .dora-em{font-size:28px;margin-bottom:12px;display:block}
+        .dora-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-3);margin-bottom:8px}
+        .dora-val{font-size:32px;font-weight:900;letter-spacing:-1px}
+        .dora-unit{font-size:11px;color:var(--text-3);margin-top:4px}
 
-        /* Section */
-        .section{margin-bottom:32px}
-        .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-        .section-title{font-size:16px;font-weight:700;letter-spacing:-.3px}
-        .section-badge{padding:3px 10px;border-radius:12px;background:var(--bg-elevated);font-size:11px;color:var(--text-secondary);font-weight:500}
+        /* ── Section ── */
+        .sec{margin-bottom:36px}
+        .sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+        .sec-title{font-size:17px;font-weight:800;letter-spacing:-.3px;background:linear-gradient(90deg,#fff,rgba(255,255,255,.6));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .sec-badge{padding:4px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--glass-border);font-size:11px;color:var(--text-2);font-weight:600}
 
-        /* DORA Strip */
-        .dora-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
-        .dora-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px 20px;text-align:center;transition:border-color .2s}
-        .dora-card:hover{border-color:var(--text-muted)}
-        .dora-emoji{font-size:24px;margin-bottom:10px}
-        .dora-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin-bottom:8px}
-        .dora-value{font-size:28px;font-weight:800;letter-spacing:-.5px}
-        .dora-unit{font-size:11px;color:var(--text-muted);margin-top:4px}
+        /* ── Charts ── */
+        .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:36px}
+        .chart-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s}
+        .chart-card:hover{border-color:rgba(255,255,255,.1)}
+        .chart-card-head{padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;font-weight:700;letter-spacing:-.1px}
+        .chart-card-body{padding:18px;height:280px;position:relative}
 
-        /* Charts */
-        .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}
-        .chart-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-        .chart-head{padding:16px 20px;border-bottom:1px solid var(--border-subtle);font-size:13px;font-weight:600}
-        .chart-body{padding:16px;height:280px;position:relative}
+        /* ── Glass Panel / Tables ── */
+        .glass-panel{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden;backdrop-filter:blur(8px)}
+        .glass-panel-head{padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between}
+        .glass-panel-title{font-size:13px;font-weight:700}
+        table.t{width:100%;border-collapse:collapse;font-size:13px}
+        table.t thead th{text-align:left;padding:11px 18px;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text-3);font-weight:700;background:rgba(255,255,255,.02);border-bottom:1px solid var(--glass-border);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;transition:color .15s}
+        table.t thead th:hover{color:var(--text-2)}
+        table.t thead th.sorted{color:var(--violet-l)}
+        table.t tbody tr{border-bottom:1px solid rgba(255,255,255,.03);transition:background .15s}
+        table.t tbody tr:last-child{border-bottom:none}
+        table.t tbody tr:hover{background:rgba(108,92,231,.04)}
+        table.t td{padding:12px 18px;white-space:nowrap}
+        table.t .n{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+        table.t .dn{font-weight:700;color:var(--text)}
+        table.t .rn{font-weight:700;color:var(--violet-l)}
+        table.t .g{color:#6ee7b7}
+        table.t .r{color:#fda4af}
+        table.t .rc{color:var(--text-3);font-size:11px;max-width:200px;white-space:normal;line-height:1.4}
+        .lang{display:inline-block;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.3px}
+        .lang-java{background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.15)}
+        .lang-javascript{background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.15)}
+        .lang-typescript{background:rgba(59,130,246,.12);color:#93c5fd;border:1px solid rgba(59,130,246,.15)}
+        .lang-default{background:rgba(168,85,247,.12);color:#d8b4fe;border:1px solid rgba(168,85,247,.15)}
 
-        /* Tables */
-        .table-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-        .table-head{padding:16px 20px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between}
-        .table-title{font-size:13px;font-weight:600}
-        table.dt{width:100%;border-collapse:collapse;font-size:13px}
-        table.dt thead th{text-align:left;padding:10px 16px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);font-weight:600;background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0}
-        table.dt thead th:hover{color:var(--text-secondary)}
-        table.dt thead th.sorted{color:var(--accent-light)}
-        table.dt tbody tr{border-bottom:1px solid var(--border-subtle);transition:background .1s}
-        table.dt tbody tr:last-child{border-bottom:none}
-        table.dt tbody tr:hover{background:rgba(99,102,241,.04)}
-        table.dt td{padding:10px 16px;white-space:nowrap}
-        table.dt .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
-        table.dt .dev-name{font-weight:600;color:var(--text)}
-        table.dt .repo-link{font-weight:600;color:var(--accent-light)}
-        table.dt .green{color:var(--green)}
-        table.dt .red{color:var(--red)}
-        .lang-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;letter-spacing:.3px}
-        .lang-java{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
-        .lang-javascript{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
-        .lang-typescript{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
-        .lang-default{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
-        .repos-col{color:var(--text-muted);font-size:11px;max-width:200px;white-space:normal;line-height:1.4}
+        /* ── Repo Explorer ── */
+        .explorer{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden;margin-bottom:36px;backdrop-filter:blur(8px)}
+        .explorer-head{padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:12px}
+        .explorer-head .title{font-size:13px;font-weight:700}
+        .tabs{display:flex;gap:6px;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.04);overflow-x:auto;scrollbar-width:none}
+        .tabs::-webkit-scrollbar{display:none}
+        .tab{padding:7px 16px;border-radius:var(--radius-xs);font-size:12px;font-weight:600;color:var(--text-3);cursor:pointer;transition:all .2s;white-space:nowrap;border:1px solid transparent;background:transparent}
+        .tab:hover{background:var(--surface-hover);color:var(--text-2)}
+        .tab.on{background:linear-gradient(135deg,rgba(108,92,231,.18),rgba(236,72,153,.08));color:#c4b5fd;border-color:rgba(108,92,231,.25);box-shadow:0 0 16px rgba(108,92,231,.1)}
+        .explorer-body{min-height:180px}
+        .exp-placeholder{display:flex;align-items:center;justify-content:center;padding:56px;color:var(--text-3);font-size:13px;font-weight:500}
+        .exp-loading{display:flex;align-items:center;justify-content:center;padding:56px;color:var(--text-3);font-size:13px;gap:10px}
+        .note-bar{padding:12px 18px;font-size:11px;color:var(--text-3);border-top:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:6px}
 
-        /* Repo Explorer */
-        .repo-explorer{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:28px}
-        .repo-explorer-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-        .repo-tabs{display:flex;gap:4px;padding:12px 16px;border-bottom:1px solid var(--border-subtle);overflow-x:auto;scrollbar-width:none}
-        .repo-tabs::-webkit-scrollbar{display:none}
-        .repo-tab{padding:6px 14px;border-radius:var(--radius-xs);font-size:12px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap;border:1px solid transparent;background:transparent}
-        .repo-tab:hover{background:var(--bg-elevated);color:var(--text)}
-        .repo-tab.active{background:var(--accent-glow);color:var(--accent-light);border-color:rgba(99,102,241,.2)}
-        .repo-content{min-height:200px}
-        .repo-loading{display:flex;align-items:center;justify-content:center;padding:48px;color:var(--text-muted);font-size:13px;gap:8px}
-        .repo-empty{display:flex;align-items:center;justify-content:center;padding:48px;color:var(--text-muted);font-size:13px}
+        /* ── Empty State ── */
+        .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 20px;text-align:center}
+        .empty-icon{font-size:40px;margin-bottom:20px}
+        .empty h3{font-size:18px;font-weight:700;margin-bottom:8px}
+        .empty p{font-size:14px;color:var(--text-3);max-width:320px}
 
-        /* Empty State */
-        .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center}
-        .empty-icon{width:56px;height:56px;border-radius:16px;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:24px}
-        .empty-title{font-size:16px;font-weight:600;margin-bottom:6px}
-        .empty-desc{font-size:13px;color:var(--text-muted);max-width:320px}
-
-        /* Toast */
-        .toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;z-index:1000;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1)}
+        /* ── Toast ── */
+        .toast{position:fixed;bottom:28px;right:28px;padding:14px 22px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;z-index:1000;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);backdrop-filter:blur(12px)}
         .toast.show{transform:translateY(0);opacity:1}
-        .toast.success{background:var(--green);color:#fff}
-        .toast.error{background:var(--red);color:#fff}
+        .toast.ok{background:rgba(16,185,129,.9);color:#fff}
+        .toast.err{background:rgba(244,63,94,.9);color:#fff}
 
-        .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .5s linear infinite}
+        .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .5s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
-        .dot-pulse{display:inline-flex;gap:4px}
-        .dot-pulse span{width:4px;height:4px;border-radius:50%;background:var(--text-muted);animation:pulse 1.2s ease-in-out infinite}
-        .dot-pulse span:nth-child(2){animation-delay:.2s}
-        .dot-pulse span:nth-child(3){animation-delay:.4s}
-        @keyframes pulse{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+        .dots{display:inline-flex;gap:4px}
+        .dots i{width:5px;height:5px;border-radius:50%;background:var(--text-3);animation:pulse 1.2s ease-in-out infinite;font-style:normal}
+        .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+        @keyframes pulse{0%,80%,100%{opacity:.25;transform:scale(.7)}40%{opacity:1;transform:scale(1)}}
 
-        /* Scrollbar */
-        ::-webkit-scrollbar{width:6px;height:6px}
-        ::-webkit-scrollbar-track{background:transparent}
-        ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-        ::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+        ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.15)}
 
-        @media(max-width:1200px){.chart-grid{grid-template-columns:1fr}.dora-strip{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:768px){.sidebar{display:none}.main{margin-left:0}.metrics-row{grid-template-columns:repeat(2,1fr)}.dora-strip{grid-template-columns:1fr 1fr}}
+        @media(max-width:1400px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+        @media(max-width:1200px){.chart-grid{grid-template-columns:1fr}.dora-row{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:768px){.sidebar{display:none}.main{margin-left:0}.kpi-grid{grid-template-columns:repeat(2,1fr)}.dora-row{grid-template-columns:1fr 1fr}.content{padding:20px 16px}}
     </style>
 </head>
 <body>
 <div class="layout">
-    <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-brand">
-            <div class="brand-icon">
-                <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-            </div>
-            <div>
-                <div class="brand-text">Metrics</div>
-                <div class="brand-sub">GitHub Analytics</div>
-            </div>
+            <div class="brand-mark"><svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></div>
+            <div><div class="brand-label">Metrics</div><div class="brand-sub">GitHub Analytics</div></div>
         </div>
         <nav class="sidebar-nav">
-            <a href="#overview" class="nav-link active" onclick="navTo('overview',this)">
-                <svg viewBox="0 0 16 16"><path d="M0 1.75C0 .784.784 0 1.75 0h3.5C6.216 0 7 .784 7 1.75v3.5A1.75 1.75 0 015.25 7h-3.5A1.75 1.75 0 010 5.25v-3.5zm1.75-.25a.25.25 0 00-.25.25v3.5c0 .138.112.25.25.25h3.5a.25.25 0 00.25-.25v-3.5a.25.25 0 00-.25-.25h-3.5zM0 10.75C0 9.784.784 9 1.75 9h3.5c.966 0 1.75.784 1.75 1.75v3.5A1.75 1.75 0 015.25 16h-3.5A1.75 1.75 0 010 14.25v-3.5zm1.75-.25a.25.25 0 00-.25.25v3.5c0 .138.112.25.25.25h3.5a.25.25 0 00.25-.25v-3.5a.25.25 0 00-.25-.25h-3.5zM9 1.75C9 .784 9.784 0 10.75 0h3.5c.966 0 1.75.784 1.75 1.75v3.5A1.75 1.75 0 0114.25 7h-3.5A1.75 1.75 0 019 5.25v-3.5zm1.75-.25a.25.25 0 00-.25.25v3.5c0 .138.112.25.25.25h3.5a.25.25 0 00.25-.25v-3.5a.25.25 0 00-.25-.25h-3.5zM9 10.75C9 9.784 9.784 9 10.75 9h3.5c.966 0 1.75.784 1.75 1.75v3.5A1.75 1.75 0 0114.25 16h-3.5A1.75 1.75 0 019 14.25v-3.5zm1.75-.25a.25.25 0 00-.25.25v3.5c0 .138.112.25.25.25h3.5a.25.25 0 00.25-.25v-3.5a.25.25 0 00-.25-.25h-3.5z"/></svg>
-                Overview
-            </a>
-            <a href="#dora" class="nav-link" onclick="navTo('dora',this)">
-                <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm3.25 8.75H8a.75.75 0 01-.75-.75V3.25a.75.75 0 011.5 0V7.25h2.5a.75.75 0 010 1.5z"/></svg>
-                DORA Metrics
-            </a>
-            <a href="#charts" class="nav-link" onclick="navTo('charts',this)">
-                <svg viewBox="0 0 16 16"><path d="M1.5 14.25V1.75a.25.25 0 00-.25-.25H.75a.75.75 0 010-1.5h.5A1.75 1.75 0 013 1.75v11.5h11.25a.75.75 0 010 1.5H2.75a1.25 1.25 0 01-1.25-1.25zM14.5 1.75a.75.75 0 00-1.5 0v8.5a.75.75 0 001.5 0v-8.5zm-6 4a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0v-4.5zm-3 2a.75.75 0 00-1.5 0v2.5a.75.75 0 001.5 0v-2.5zm6-1a.75.75 0 00-1.5 0v3.5a.75.75 0 001.5 0v-3.5z"/></svg>
-                Analytics
-            </a>
-            <div class="nav-sep"></div>
-            <a href="#repo-explorer" class="nav-link" onclick="navTo('repo-explorer',this)">
-                <svg viewBox="0 0 16 16"><path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 010-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/></svg>
-                Repo Explorer
-            </a>
-            <a href="#developers" class="nav-link" onclick="navTo('developers',this)">
-                <svg viewBox="0 0 16 16"><path d="M10.561 8.073a6.005 6.005 0 013.432 5.142.75.75 0 11-1.498.07 4.5 4.5 0 00-8.99 0 .75.75 0 11-1.498-.07 6.004 6.004 0 013.431-5.142 3.999 3.999 0 115.123 0zM10.5 5a2.5 2.5 0 10-5 0 2.5 2.5 0 005 0z"/></svg>
-                Developers
-            </a>
-            <a href="#repositories" class="nav-link" onclick="navTo('repositories',this)">
-                <svg viewBox="0 0 16 16"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0114.25 16H1.75A1.75 1.75 0 010 14.25V1.75zM1.75 1.5a.25.25 0 00-.25.25v12.5c0 .138.112.25.25.25h12.5a.25.25 0 00.25-.25V1.75a.25.25 0 00-.25-.25H1.75z"/></svg>
-                Repositories
-            </a>
+            <a href="#overview" class="nav-a on" onclick="go('overview',this)"><svg viewBox="0 0 16 16"><path d="M0 1.75C0 .784.784 0 1.75 0h3.5C6.216 0 7 .784 7 1.75v3.5A1.75 1.75 0 015.25 7h-3.5A1.75 1.75 0 010 5.25v-3.5zm9 0C9 .784 9.784 0 10.75 0h3.5c.966 0 1.75.784 1.75 1.75v3.5A1.75 1.75 0 0114.25 7h-3.5A1.75 1.75 0 019 5.25v-3.5zm-9 9C0 9.784.784 9 1.75 9h3.5c.966 0 1.75.784 1.75 1.75v3.5A1.75 1.75 0 015.25 16h-3.5A1.75 1.75 0 010 14.25v-3.5zm9 0C9 9.784 9.784 9 10.75 9h3.5c.966 0 1.75.784 1.75 1.75v3.5A1.75 1.75 0 0114.25 16h-3.5A1.75 1.75 0 019 14.25v-3.5z"/></svg>Overview</a>
+            <a href="#dora" class="nav-a" onclick="go('dora',this)"><svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm3.25 8.75H8a.75.75 0 01-.75-.75V3.25a.75.75 0 011.5 0V7.25h2.5a.75.75 0 010 1.5z"/></svg>DORA Metrics</a>
+            <a href="#charts" class="nav-a" onclick="go('charts',this)"><svg viewBox="0 0 16 16"><path d="M1.5 14.25V1.75a.25.25 0 00-.25-.25H.75a.75.75 0 010-1.5h.5A1.75 1.75 0 013 1.75v11.5h11.25a.75.75 0 010 1.5H2.75a1.25 1.25 0 01-1.25-1.25zM14.5 1.75a.75.75 0 00-1.5 0v8.5a.75.75 0 001.5 0v-8.5zm-6 4a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0v-4.5zm-3 2a.75.75 0 00-1.5 0v2.5a.75.75 0 001.5 0v-2.5zm6-1a.75.75 0 00-1.5 0v3.5a.75.75 0 001.5 0v-3.5z"/></svg>Analytics</a>
+            <div class="sep"></div>
+            <a href="#repo-explorer" class="nav-a" onclick="go('repo-explorer',this)"><svg viewBox="0 0 16 16"><path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 010-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5z"/></svg>Repo Explorer</a>
+            <a href="#developers" class="nav-a" onclick="go('developers',this)"><svg viewBox="0 0 16 16"><path d="M10.561 8.073a6.005 6.005 0 013.432 5.142.75.75 0 11-1.498.07 4.5 4.5 0 00-8.99 0 .75.75 0 11-1.498-.07 6.004 6.004 0 013.431-5.142 3.999 3.999 0 115.123 0zM10.5 5a2.5 2.5 0 10-5 0 2.5 2.5 0 005 0z"/></svg>Developers</a>
+            <a href="#repositories" class="nav-a" onclick="go('repositories',this)"><svg viewBox="0 0 16 16"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0114.25 16H1.75A1.75 1.75 0 010 14.25V1.75z"/></svg>Repositories</a>
         </nav>
-        <div class="sidebar-footer">
-            <div class="user-pill">
-                <div class="avatar">{{ username[0]|upper }}</div>
-                <div class="user-meta">
-                    <div class="name">{{ username }}</div>
-                    <div class="role">Administrator</div>
-                </div>
-            </div>
-            <a href="{{ url_for('logout') }}" class="btn-signout">Sign Out</a>
+        <div class="sidebar-foot">
+            <div class="user-row"><div class="avatar">{{ username[0]|upper }}</div><div><div class="u-name">{{ username }}</div><div class="u-role">Administrator</div></div></div>
+            <a href="{{ url_for('logout') }}" class="btn-out">Sign Out</a>
         </div>
     </aside>
 
-    <!-- Main -->
     <main class="main">
         <div class="topbar">
             <div class="topbar-title">Organization Dashboard</div>
-            <div class="topbar-actions">
-                <div class="org-chip">
-                    <svg viewBox="0 0 16 16"><path d="M1.75 16A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.75.75 0 11.832-1.248l1.064.71c.487.325.793.871.793 1.458v6.456A1.75 1.75 0 0114.25 16h-3.5a.75.75 0 01-.197-.026c-.099.017-.2.026-.303.026h-3a.75.75 0 01-.75-.75V14h-1v1.25a.75.75 0 01-.75.75h-3z"/></svg>
-                    {{ org }}
-                </div>
-                <button class="btn" onclick="refreshData()" id="refreshBtn">
-                    <svg viewBox="0 0 16 16"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5zM1.705 8.005a.75.75 0 01.834.656 5.501 5.501 0 009.592 2.97l-1.204-1.204a.25.25 0 01.177-.427h3.646a.25.25 0 01.25.25v3.646a.25.25 0 01-.427.177l-1.38-1.38A7.001 7.001 0 011.05 8.84a.75.75 0 01.656-.834z"/></svg>
-                    Refresh
-                </button>
+            <div class="topbar-right">
+                <div class="chip"><svg viewBox="0 0 16 16"><path d="M1.75 16A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.75.75 0 11.832-1.248l1.064.71c.487.325.793.871.793 1.458v6.456A1.75 1.75 0 0114.25 16z"/></svg>{{ org }}</div>
+                <button class="btn" onclick="doRefresh()" id="rfBtn"><svg viewBox="0 0 16 16"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5zM1.705 8.005a.75.75 0 01.834.656 5.501 5.501 0 009.592 2.97l-1.204-1.204a.25.25 0 01.177-.427h3.646a.25.25 0 01.25.25v3.646a.25.25 0 01-.427.177l-1.38-1.38A7.001 7.001 0 011.05 8.84a.75.75 0 01.656-.834z"/></svg>Refresh</button>
             </div>
         </div>
-
         <div class="content">
         {% if not data.repos and not data.developers %}
-            <div class="empty-state">
-                <div class="empty-icon">📊</div>
-                <div class="empty-title">No metrics data yet</div>
-                <div class="empty-desc">Click "Refresh" to fetch metrics from GitHub, or run the CLI tool first.</div>
-            </div>
+            <div class="empty"><div class="empty-icon">📊</div><h3>No metrics data yet</h3><p>Click Refresh to fetch metrics from GitHub, or run the CLI tool first.</p></div>
         {% else %}
 
-            <!-- Overview -->
-            <section id="overview">
-                <div class="metrics-row">
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background:var(--accent-glow)">📦</div>
-                        <div class="metric-label">Repositories</div>
-                        <div class="metric-value" style="color:var(--accent-light)">{{ data.summary.total_repos }}</div>
-                        <div class="metric-sub">Active in period</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background:var(--green-bg)">⚡</div>
-                        <div class="metric-label">Total Commits</div>
-                        <div class="metric-value" style="color:var(--green)">{{ "{:,}".format(data.summary.total_commits) }}</div>
-                        <div class="metric-sub">Last 3 months</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background:var(--purple-bg)">🔀</div>
-                        <div class="metric-label">Pull Requests</div>
-                        <div class="metric-value" style="color:var(--purple)">{{ "{:,}".format(data.summary.total_prs) }}</div>
-                        <div class="metric-sub">Opened / updated</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background:var(--cyan-bg)">👥</div>
-                        <div class="metric-label">Developers</div>
-                        <div class="metric-value" style="color:var(--cyan)">{{ data.summary.total_devs }}</div>
-                        <div class="metric-sub">Active contributors</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background:var(--amber-bg)">🚀</div>
-                        <div class="metric-label">Deployments</div>
-                        <div class="metric-value" style="color:var(--amber)">{{ "{:,}".format(data.summary.total_deploys) }}</div>
-                        <div class="metric-sub">CI/CD workflow runs</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background:var(--rose-bg)">🕐</div>
-                        <div class="metric-label">Avg Lead Time</div>
-                        <div class="metric-value" style="color:var(--rose)">{{ data.summary.avg_lead_time }}h</div>
-                        <div class="metric-sub">Branch to merge</div>
-                    </div>
-                </div>
-            </section>
+        <!-- KPI -->
+        <section id="overview">
+            <div class="kpi-grid">
+                <div class="kpi v-violet"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">📦</div><div class="kpi-label">Repositories</div><div class="kpi-val">{{ data.summary.total_repos }}</div><div class="kpi-sub">Active in period</div></div></div>
+                <div class="kpi v-emerald"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">⚡</div><div class="kpi-label">Total Commits</div><div class="kpi-val">{{ "{:,}".format(data.summary.total_commits) }}</div><div class="kpi-sub">Last 3 months</div></div></div>
+                <div class="kpi v-pink"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">🔀</div><div class="kpi-label">Pull Requests</div><div class="kpi-val">{{ "{:,}".format(data.summary.total_prs) }}</div><div class="kpi-sub">Opened / updated</div></div></div>
+                <div class="kpi v-cyan"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">👥</div><div class="kpi-label">Developers</div><div class="kpi-val">{{ data.summary.total_devs }}</div><div class="kpi-sub">Active contributors</div></div></div>
+                <div class="kpi v-amber"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">🚀</div><div class="kpi-label">Deployments</div><div class="kpi-val">{{ "{:,}".format(data.summary.total_deploys) }}</div><div class="kpi-sub">CI/CD runs</div></div></div>
+                <div class="kpi v-rose"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">🕐</div><div class="kpi-label">Avg Lead Time</div><div class="kpi-val">{{ data.summary.avg_lead_time }}h</div><div class="kpi-sub">Branch to merge</div></div></div>
+            </div>
+        </section>
 
-            <!-- DORA -->
-            <section id="dora">
-                <div class="section"><div class="section-head"><div class="section-title">DORA Metrics</div></div></div>
-                <div class="dora-strip">
-                    <div class="dora-card">
-                        <div class="dora-emoji">⏱️</div>
-                        <div class="dora-label">Lead Time</div>
-                        <div class="dora-value" style="color:var(--accent-light)">{{ data.summary.avg_lead_time }}</div>
-                        <div class="dora-unit">hours (avg)</div>
-                    </div>
-                    <div class="dora-card">
-                        <div class="dora-emoji">🚀</div>
-                        <div class="dora-label">Deploy Frequency</div>
-                        <div class="dora-value" style="color:var(--green)">{{ data.summary.total_deploys }}</div>
-                        <div class="dora-unit">total deployments</div>
-                    </div>
-                    <div class="dora-card">
-                        <div class="dora-emoji">⚠️</div>
-                        <div class="dora-label">Change Failure Rate</div>
-                        <div class="dora-value" style="color:var(--red)">{{ data.summary.avg_fail_rate }}%</div>
-                        <div class="dora-unit">of deployments</div>
-                    </div>
-                    <div class="dora-card">
-                        <div class="dora-emoji">🔧</div>
-                        <div class="dora-label">Avg Deploy Time</div>
-                        <div class="dora-value" style="color:var(--amber)">{{ data.summary.avg_deploy_time }}</div>
-                        <div class="dora-unit">minutes</div>
-                    </div>
-                </div>
-            </section>
+        <!-- DORA -->
+        <section id="dora">
+            <div class="sec"><div class="sec-head"><div class="sec-title">DORA Metrics</div></div></div>
+            <div class="dora-row">
+                <div class="dora"><span class="dora-em">⏱️</span><div class="dora-lbl">Lead Time</div><div class="dora-val" style="color:var(--violet-l)">{{ data.summary.avg_lead_time }}</div><div class="dora-unit">hours (avg)</div></div>
+                <div class="dora"><span class="dora-em">🚀</span><div class="dora-lbl">Deploy Frequency</div><div class="dora-val" style="color:#6ee7b7">{{ data.summary.total_deploys }}</div><div class="dora-unit">total deployments</div></div>
+                <div class="dora"><span class="dora-em">⚠️</span><div class="dora-lbl">Change Failure Rate</div><div class="dora-val" style="color:#fda4af">{{ data.summary.avg_fail_rate }}%</div><div class="dora-unit">of deployments</div></div>
+                <div class="dora"><span class="dora-em">🔧</span><div class="dora-lbl">Avg Deploy Time</div><div class="dora-val" style="color:#fcd34d">{{ data.summary.avg_deploy_time }}</div><div class="dora-unit">minutes</div></div>
+            </div>
+        </section>
 
-            <!-- Charts -->
-            <section id="charts">
-                <div class="section"><div class="section-head"><div class="section-title">Analytics</div></div></div>
-                <div class="chart-grid">
-                    <div class="chart-panel"><div class="chart-head">Commits by Repository</div><div class="chart-body"><canvas id="commitsChart"></canvas></div></div>
-                    <div class="chart-panel"><div class="chart-head">Pull Requests by Repository</div><div class="chart-body"><canvas id="prsChart"></canvas></div></div>
-                    <div class="chart-panel"><div class="chart-head">Top Contributors (Lines Added)</div><div class="chart-body"><canvas id="devsChart"></canvas></div></div>
-                    <div class="chart-panel"><div class="chart-head">Lead Time by Repository</div><div class="chart-body"><canvas id="leadTimeChart"></canvas></div></div>
-                </div>
-            </section>
+        <!-- Charts -->
+        <section id="charts">
+            <div class="sec"><div class="sec-head"><div class="sec-title">Analytics</div></div></div>
+            <div class="chart-grid">
+                <div class="chart-card"><div class="chart-card-head">Commits by Repository</div><div class="chart-card-body"><canvas id="cCommits"></canvas></div></div>
+                <div class="chart-card"><div class="chart-card-head">Pull Requests by Repository</div><div class="chart-card-body"><canvas id="cPRs"></canvas></div></div>
+                <div class="chart-card"><div class="chart-card-head">Top Contributors</div><div class="chart-card-body"><canvas id="cDevs"></canvas></div></div>
+                <div class="chart-card"><div class="chart-card-head">Lead Time by Repository</div><div class="chart-card-body"><canvas id="cLead"></canvas></div></div>
+            </div>
+        </section>
 
-            <!-- Repo Explorer -->
-            <section id="repo-explorer">
-                <div class="repo-explorer">
-                    <div class="repo-explorer-head">
-                        <div style="display:flex;align-items:center;gap:10px">
-                            <span class="table-title">Repository Explorer</span>
-                            <span class="section-badge">Select a repo to view developer activity</span>
-                        </div>
-                    </div>
-                    <div class="repo-tabs" id="repoTabs">
-                        {% for rname in repo_names %}
-                        <div class="repo-tab" data-repo="{{ rname }}" onclick="selectRepo('{{ rname }}', this)">{{ rname.replace('qomitto-', '') }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="repo-content" id="repoContent">
-                        <div class="repo-empty">Select a repository above to view per-repo developer activity</div>
-                    </div>
-                </div>
-            </section>
+        <!-- Repo Explorer -->
+        <section id="repo-explorer">
+            <div class="explorer">
+                <div class="explorer-head"><span class="title">Repository Explorer</span><span class="sec-badge">Select a repository</span></div>
+                <div class="tabs" id="repoTabs">{% for rname in repo_names %}<div class="tab" data-repo="{{ rname }}" onclick="pickRepo('{{ rname }}',this)">{{ rname.replace('qomitto-','') }}</div>{% endfor %}</div>
+                <div class="explorer-body" id="repoBody"><div class="exp-placeholder">Select a repository above to view per-repo developer activity</div></div>
+            </div>
+        </section>
 
-            <!-- Developers -->
-            <section id="developers">
-                <div class="section"><div class="section-head">
-                    <div class="section-title">Developer Activity</div>
-                    <span class="section-badge">{{ data.developers|length }} developers</span>
-                </div></div>
-                <div class="table-panel">
-                    <div style="overflow-x:auto">
-                    <table class="dt" id="devTable">
-                        <thead><tr>
-                            <th onclick="sortTbl('devTable',0,'s')">Developer</th>
-                            <th onclick="sortTbl('devTable',1,'n')">Commits</th>
-                            <th onclick="sortTbl('devTable',2,'n')">Lines Added</th>
-                            <th onclick="sortTbl('devTable',3,'n')">Lines Deleted</th>
-                            <th onclick="sortTbl('devTable',4,'n')">PRs Opened</th>
-                            <th onclick="sortTbl('devTable',5,'n')">PRs Reviewed</th>
-                            <th onclick="sortTbl('devTable',6,'n')">PR Comments</th>
-                            <th onclick="sortTbl('devTable',7,'s')">Repositories</th>
-                        </tr></thead>
-                        <tbody>
-                        {% for dev in data.developers %}
-                        <tr>
-                            <td class="dev-name">{{ dev.Developer }}</td>
-                            <td class="num">{{ "{:,}".format(dev.Commits) }}</td>
-                            <td class="num green">+{{ "{:,}".format(dev['Lines Added']) }}</td>
-                            <td class="num red">-{{ "{:,}".format(dev['Lines Deleted']) }}</td>
-                            <td class="num">{{ dev['PRs Opened'] }}</td>
-                            <td class="num">{{ dev['PRs Reviewed'] }}</td>
-                            <td class="num">{{ dev['PR Comments'] }}</td>
-                            <td class="repos-col">{{ dev.get('Repositories','') }}</td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                    </div>
-                </div>
-            </section>
+        <!-- Developers -->
+        <section id="developers">
+            <div class="sec"><div class="sec-head"><div class="sec-title">Developer Activity</div><span class="sec-badge">{{ data.developers|length }} developers</span></div></div>
+            <div class="glass-panel"><div style="overflow-x:auto">
+                <table class="t" id="devT"><thead><tr>
+                    <th onclick="srt('devT',0,'s')">Developer</th><th onclick="srt('devT',1,'n')">Commits</th><th onclick="srt('devT',2,'n')">Lines Added</th><th onclick="srt('devT',3,'n')">Lines Deleted</th><th onclick="srt('devT',4,'n')">PRs Opened</th><th onclick="srt('devT',5,'n')">PRs Reviewed</th><th onclick="srt('devT',6,'n')">PR Comments</th><th onclick="srt('devT',7,'s')">Repositories</th>
+                </tr></thead><tbody>
+                {% for dev in data.developers %}<tr>
+                    <td class="dn">{{ dev.Developer }}</td><td class="n">{{ "{:,}".format(dev.Commits) }}</td><td class="n g">+{{ "{:,}".format(dev['Lines Added']) }}</td><td class="n r">-{{ "{:,}".format(dev['Lines Deleted']) }}</td><td class="n">{{ dev['PRs Opened'] }}</td><td class="n">{{ dev['PRs Reviewed'] }}</td><td class="n">{{ dev['PR Comments'] }}</td><td class="rc">{{ dev.get('Repositories','') }}</td>
+                </tr>{% endfor %}
+                </tbody></table>
+            </div></div>
+        </section>
 
-            <!-- Repositories -->
-            <section id="repositories">
-                <div class="section"><div class="section-head">
-                    <div class="section-title">Repository Metrics</div>
-                    <span class="section-badge">{{ data.repos|length }} repositories</span>
-                </div></div>
-                <div class="table-panel">
-                    <div style="overflow-x:auto">
-                    <table class="dt" id="repoTable">
-                        <thead><tr>
-                            <th onclick="sortTbl('repoTable',0,'s')">Repository</th>
-                            <th onclick="sortTbl('repoTable',1,'n')">Commits</th>
-                            <th onclick="sortTbl('repoTable',2,'n')">PRs</th>
-                            <th onclick="sortTbl('repoTable',3,'n')">Lead Time (h)</th>
-                            <th onclick="sortTbl('repoTable',4,'n')">Deploys</th>
-                            <th onclick="sortTbl('repoTable',5,'n')">Fail %</th>
-                            <th onclick="sortTbl('repoTable',6,'n')">Deploy (m)</th>
-                            <th onclick="sortTbl('repoTable',7,'s')">Language</th>
-                            <th onclick="sortTbl('repoTable',8,'n')">Branches</th>
-                            <th onclick="sortTbl('repoTable',9,'n')">Contributors</th>
-                        </tr></thead>
-                        <tbody>
-                        {% for repo in data.repos %}
-                        <tr>
-                            <td class="repo-link">{{ repo.Repository }}</td>
-                            <td class="num">{{ repo.Commits }}</td>
-                            <td class="num">{{ repo.PRs }}</td>
-                            <td class="num">{{ repo['Lead Time (h)'] }}</td>
-                            <td class="num">{{ repo.Deploys }}</td>
-                            <td class="num">{{ repo['Fail %'] }}%</td>
-                            <td class="num">{{ repo['Deploy (m)'] }}</td>
-                            <td>{% set lang = repo.Language|lower %}<span class="lang-badge {% if lang == 'java' %}lang-java{% elif lang == 'javascript' %}lang-javascript{% elif lang == 'typescript' %}lang-typescript{% else %}lang-default{% endif %}">{{ repo.Language }}</span></td>
-                            <td class="num">{{ repo.Branches }}</td>
-                            <td class="num">{{ repo.Contributors }}</td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                    </div>
-                </div>
-            </section>
+        <!-- Repositories -->
+        <section id="repositories">
+            <div class="sec"><div class="sec-head"><div class="sec-title">Repository Metrics</div><span class="sec-badge">{{ data.repos|length }} repos</span></div></div>
+            <div class="glass-panel"><div style="overflow-x:auto">
+                <table class="t" id="repoT"><thead><tr>
+                    <th onclick="srt('repoT',0,'s')">Repository</th><th onclick="srt('repoT',1,'n')">Commits</th><th onclick="srt('repoT',2,'n')">PRs</th><th onclick="srt('repoT',3,'n')">Lead Time (h)</th><th onclick="srt('repoT',4,'n')">Deploys</th><th onclick="srt('repoT',5,'n')">Fail %</th><th onclick="srt('repoT',6,'n')">Deploy (m)</th><th onclick="srt('repoT',7,'s')">Language</th><th onclick="srt('repoT',8,'n')">Branches</th><th onclick="srt('repoT',9,'n')">Contributors</th>
+                </tr></thead><tbody>
+                {% for repo in data.repos %}<tr>
+                    <td class="rn">{{ repo.Repository }}</td><td class="n">{{ repo.Commits }}</td><td class="n">{{ repo.PRs }}</td><td class="n">{{ repo['Lead Time (h)'] }}</td><td class="n">{{ repo.Deploys }}</td><td class="n">{{ repo['Fail %'] }}%</td><td class="n">{{ repo['Deploy (m)'] }}</td>
+                    <td>{% set l=repo.Language|lower %}<span class="lang {% if l=='java' %}lang-java{% elif l=='javascript' %}lang-javascript{% elif l=='typescript' %}lang-typescript{% else %}lang-default{% endif %}">{{ repo.Language }}</span></td>
+                    <td class="n">{{ repo.Branches }}</td><td class="n">{{ repo.Contributors }}</td>
+                </tr>{% endfor %}
+                </tbody></table>
+            </div></div>
+        </section>
         {% endif %}
         </div>
     </main>
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
-const repoData = {{ data.repos | tojson }};
-const devData = {{ data.developers | tojson }};
-const ORG = '{{ org }}';
-
-const C = ['#6366f1','#22c55e','#a855f7','#f59e0b','#ef4444','#06b6d4','#f43f5e','#818cf8','#4ade80','#c084fc'];
-Chart.defaults.color = '#71717a';
-Chart.defaults.borderColor = '#27272a';
-Chart.defaults.font.family = "'Inter',system-ui,sans-serif";
-Chart.defaults.font.size = 11;
-
-function makeBarOpts(horizontal){
-    return {
-        responsive:true,maintainAspectRatio:false,
-        indexAxis: horizontal ? 'y' : 'x',
-        plugins:{legend:{display:false}},
-        scales:{
-            [horizontal?'x':'y']:{beginAtZero:true,grid:{color:'#1f1f23'}},
-            [horizontal?'y':'x']:{grid:{display:false},ticks:{maxRotation:45}}
-        }
-    };
+const RD={{ data.repos|tojson }},DD={{ data.developers|tojson }},ORG='{{ org }}';
+const P=['#6c5ce7','#10b981','#ec4899','#06b6d4','#f59e0b','#f43f5e','#3b82f6','#a855f7','#f97316','#14b8a6'];
+Chart.defaults.color='rgba(255,255,255,.35)';Chart.defaults.borderColor='rgba(255,255,255,.06)';
+Chart.defaults.font.family="'Inter',system-ui,sans-serif";Chart.defaults.font.size=11;
+function bOpts(h){return{responsive:true,maintainAspectRatio:false,indexAxis:h?'y':'x',plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(20,20,40,.9)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.7)',padding:12,cornerRadius:8,titleFont:{weight:'700'}}},scales:{[h?'x':'y']:{beginAtZero:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.3)'}},[h?'y':'x']:{grid:{display:false},ticks:{maxRotation:45,color:'rgba(255,255,255,.3)'}}}}}
+if(RD.length){
+    const L=RD.map(r=>r.Repository.replace('qomitto-',''));
+    function grd(ctx,c){const g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,c+'50');g.addColorStop(1,c+'08');return g}
+    const c1=document.getElementById('cCommits').getContext('2d');
+    new Chart(c1,{type:'bar',data:{labels:L,datasets:[{data:RD.map(r=>r.Commits),backgroundColor:P.map((c,i)=>{const g=c1.createLinearGradient(0,0,0,260);g.addColorStop(0,c+'60');g.addColorStop(1,c+'15');return g}),borderColor:P,borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:bOpts(false)});
+    const c2=document.getElementById('cPRs').getContext('2d');
+    new Chart(c2,{type:'bar',data:{labels:L,datasets:[{data:RD.map(r=>r.PRs),backgroundColor:P.map((c,i)=>{const g=c2.createLinearGradient(0,0,0,260);g.addColorStop(0,c+'60');g.addColorStop(1,c+'15');return g}),borderColor:P,borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:bOpts(false)});
+    const c4=document.getElementById('cLead').getContext('2d');
+    new Chart(c4,{type:'bar',data:{labels:L,datasets:[{data:RD.map(r=>r['Lead Time (h)']),backgroundColor:RD.map(r=>{const v=r['Lead Time (h)'];return v<=24?'rgba(16,185,129,.4)':v<=72?'rgba(245,158,11,.4)':'rgba(244,63,94,.4)'}),borderColor:RD.map(r=>{const v=r['Lead Time (h)'];return v<=24?'#10b981':v<=72?'#f59e0b':'#f43f5e'}),borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:{...bOpts(false),scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,.04)'},title:{display:true,text:'Hours',color:'rgba(255,255,255,.3)'},ticks:{color:'rgba(255,255,255,.3)'}},x:{grid:{display:false},ticks:{maxRotation:45,color:'rgba(255,255,255,.3)'}}}}});
+}
+if(DD.length){
+    const top=DD.slice(0,10),c3=document.getElementById('cDevs').getContext('2d');
+    const bg=c3.createLinearGradient(0,0,600,0);bg.addColorStop(0,'rgba(16,185,129,.5)');bg.addColorStop(1,'rgba(16,185,129,.1)');
+    new Chart(c3,{type:'bar',data:{labels:top.map(d=>d.Developer),datasets:[{data:top.map(d=>d['Lines Added']),backgroundColor:bg,borderColor:'#10b981',borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:bOpts(true)});
 }
 
-if(repoData.length){
-    const labels = repoData.map(r=>r.Repository.replace('qomitto-',''));
-    new Chart(document.getElementById('commitsChart'),{type:'bar',data:{labels,datasets:[{data:repoData.map(r=>r.Commits),backgroundColor:C.map(c=>c+'30'),borderColor:C,borderWidth:1.5,borderRadius:6}]},options:makeBarOpts(false)});
-    new Chart(document.getElementById('prsChart'),{type:'bar',data:{labels,datasets:[{data:repoData.map(r=>r.PRs),backgroundColor:C.map(c=>c+'30'),borderColor:C,borderWidth:1.5,borderRadius:6}]},options:makeBarOpts(false)});
-    new Chart(document.getElementById('leadTimeChart'),{type:'bar',data:{labels,datasets:[{data:repoData.map(r=>r['Lead Time (h)']),backgroundColor:repoData.map(r=>{const l=r['Lead Time (h)'];return l<=24?'#22c55e30':l<=72?'#f59e0b30':'#ef444430'}),borderColor:repoData.map(r=>{const l=r['Lead Time (h)'];return l<=24?'#22c55e':l<=72?'#f59e0b':'#ef4444'}),borderWidth:1.5,borderRadius:6}]},options:{...makeBarOpts(false),scales:{y:{beginAtZero:true,grid:{color:'#1f1f23'},title:{display:true,text:'Hours',color:'#71717a'}},x:{grid:{display:false},ticks:{maxRotation:45}}}}});
-}
-if(devData.length){
-    const top = devData.slice(0,10);
-    new Chart(document.getElementById('devsChart'),{type:'bar',data:{labels:top.map(d=>d.Developer),datasets:[{data:top.map(d=>d['Lines Added']),backgroundColor:'#22c55e30',borderColor:'#22c55e',borderWidth:1.5,borderRadius:6}]},options:makeBarOpts(true)});
-}
+function srt(id,c,t){const tbl=document.getElementById(id),tb=tbl.querySelector('tbody'),rows=[...tb.rows];const th=tbl.querySelectorAll('thead th')[c],asc=th.dataset.s!=='a';tbl.querySelectorAll('thead th').forEach(h=>{h.classList.remove('sorted');delete h.dataset.s});th.classList.add('sorted');th.dataset.s=asc?'a':'d';rows.sort((a,b)=>{let x=a.cells[c].textContent.trim(),y=b.cells[c].textContent.trim();if(t==='n'){x=parseFloat(x.replace(/[,+\-%]/g,''))||0;y=parseFloat(y.replace(/[,+\-%]/g,''))||0}return x<y?(asc?-1:1):x>y?(asc?1:-1):0});rows.forEach(r=>tb.appendChild(r))}
+function go(id,el){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});document.querySelectorAll('.nav-a').forEach(n=>n.classList.remove('on'));el.classList.add('on')}
 
-// Table sorting
-function sortTbl(id,col,type){
-    const t=document.getElementById(id),tb=t.querySelector('tbody'),rows=Array.from(tb.rows);
-    const th=t.querySelectorAll('thead th')[col],asc=th.dataset.sort!=='asc';
-    t.querySelectorAll('thead th').forEach(h=>{h.classList.remove('sorted');delete h.dataset.sort});
-    th.classList.add('sorted');th.dataset.sort=asc?'asc':'desc';
-    rows.sort((a,b)=>{let va=a.cells[col].textContent.trim(),vb=b.cells[col].textContent.trim();if(type==='n'){va=parseFloat(va.replace(/[,+\-%]/g,''))||0;vb=parseFloat(vb.replace(/[,+\-%]/g,''))||0}return va<vb?(asc?-1:1):va>vb?(asc?1:-1):0});
-    rows.forEach(r=>tb.appendChild(r));
-}
-
-// Nav
-function navTo(id,el){
-    document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});
-    document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active'));
-    el.classList.add('active');
-}
-
-// Repo Explorer
-async function selectRepo(name,el){
-    document.querySelectorAll('.repo-tab').forEach(t=>t.classList.remove('active'));
-    el.classList.add('active');
-    const box=document.getElementById('repoContent');
-    box.innerHTML='<div class="repo-loading"><span class="dot-pulse"><span></span><span></span><span></span></span> Loading developer metrics…</div>';
+async function pickRepo(name,el){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
+    const box=document.getElementById('repoBody');
+    box.innerHTML='<div class="exp-loading"><span class="dots"><i></i><i></i><i></i></span> Loading…</div>';
     try{
-        const res=await fetch(`/api/repo-developers/${ORG}/${name}`);
-        const data=await res.json();
-        if(!data.developers||!data.developers.length){
-            box.innerHTML='<div class="repo-empty">No developer activity found for this repository in the analysis period</div>';
-            return;
-        }
-        let html='<div style="overflow-x:auto"><table class="dt"><thead><tr>';
-        html+='<th>Developer</th><th>Commits</th><th>Lines Added</th><th>Lines Deleted</th><th>PRs Opened</th><th>PRs Reviewed</th><th>PR Comments</th>';
-        html+='</tr></thead><tbody>';
-        for(const d of data.developers){
-            html+=`<tr>
-                <td class="dev-name">${d.Developer}</td>
-                <td class="num">${d.Commits.toLocaleString()}</td>
-                <td class="num green">+${d['Lines Added'].toLocaleString()}</td>
-                <td class="num red">-${d['Lines Deleted'].toLocaleString()}</td>
-                <td class="num">${d['PRs Opened']}</td>
-                <td class="num">${d['PRs Reviewed']}</td>
-                <td class="num">${d['PR Comments']}</td>
-            </tr>`;
-        }
-        html+='</tbody></table></div>';
-        if(!data.has_pr_details){
-            html+='<div style="padding:10px 16px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border-subtle)">ℹ️ PR Reviews & Comments data requires running the CLI without --fast flag. Re-fetch is in progress.</div>';
-        }
-        box.innerHTML=html;
-    }catch(e){
-        box.innerHTML='<div class="repo-empty">Error loading data</div>';
-    }
+        const r=await fetch(`/api/repo-developers/${ORG}/${name}`),d=await r.json();
+        if(!d.developers||!d.developers.length){box.innerHTML='<div class="exp-placeholder">No developer activity found for this repository</div>';return}
+        let h='<div style="overflow-x:auto"><table class="t"><thead><tr><th>Developer</th><th>Commits</th><th>Lines Added</th><th>Lines Deleted</th><th>PRs Opened</th><th>PRs Reviewed</th><th>PR Comments</th></tr></thead><tbody>';
+        for(const v of d.developers)h+=`<tr><td class="dn">${v.Developer}</td><td class="n">${v.Commits.toLocaleString()}</td><td class="n g">+${v['Lines Added'].toLocaleString()}</td><td class="n r">-${v['Lines Deleted'].toLocaleString()}</td><td class="n">${v['PRs Opened']}</td><td class="n">${v['PRs Reviewed']}</td><td class="n">${v['PR Comments']}</td></tr>`;
+        h+='</tbody></table></div>';
+        if(!d.has_pr_details)h+='<div class="note-bar">ℹ️ PR Reviews/Comments require running CLI without --fast flag.</div>';
+        box.innerHTML=h;
+    }catch(e){box.innerHTML='<div class="exp-placeholder">Error loading data</div>'}
 }
 
-// Refresh
-async function refreshData(){
-    const btn=document.getElementById('refreshBtn');
-    btn.innerHTML='<span class="spinner"></span> Refreshing…';btn.disabled=true;
-    try{
-        const r=await fetch('/api/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({org:ORG})});
-        const d=await r.json();
-        if(r.ok){showToast('Data refreshed! Reloading…','success');setTimeout(()=>location.reload(),800)}
-        else showToast('Error: '+d.message,'error');
-    }catch(e){showToast('Network error','error')}
-    finally{btn.innerHTML='<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5z"/></svg> Refresh';btn.disabled=false}
-}
-function showToast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className='toast show '+t;setTimeout(()=>e.classList.remove('show'),3000)}
+async function doRefresh(){const b=document.getElementById('rfBtn');b.innerHTML='<span class="spinner"></span> Refreshing…';b.disabled=true;try{const r=await fetch('/api/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({org:ORG})});const d=await r.json();if(r.ok){toast('Data refreshed!','ok');setTimeout(()=>location.reload(),800)}else toast('Error: '+d.message,'err')}catch(e){toast('Network error','err')}finally{b.innerHTML='<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5z"/></svg> Refresh';b.disabled=false}}
+function toast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className='toast show '+t;setTimeout(()=>e.classList.remove('show'),3000)}
 </script>
 </body>
 </html>
