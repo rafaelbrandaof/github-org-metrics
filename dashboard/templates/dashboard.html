@@ -3,632 +3,309 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Metrics Dashboard - {{ org }}</title>
+    <title>{{ org }} — Metrics Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
-        :root {
-            --bg-primary: #0d1117;
-            --bg-secondary: #161b22;
-            --bg-tertiary: #21262d;
-            --bg-card: #161b22;
-            --border: #30363d;
-            --text-primary: #f0f6fc;
-            --text-secondary: #8b949e;
-            --text-muted: #6e7681;
-            --accent: #58a6ff;
-            --accent-hover: #79c0ff;
-            --green: #3fb950;
-            --green-bg: rgba(63,185,80,.12);
-            --red: #f85149;
-            --red-bg: rgba(248,81,73,.12);
-            --orange: #d29922;
-            --orange-bg: rgba(210,153,34,.12);
-            --purple: #bc8cff;
-            --purple-bg: rgba(188,140,255,.12);
-            --blue: #58a6ff;
-            --blue-bg: rgba(88,166,255,.12);
-            --cyan: #39d2c0;
-            --cyan-bg: rgba(57,210,192,.12);
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --bg:#09090b;--bg-card:#18181b;--bg-card-hover:#1f1f23;--bg-elevated:#27272a;
+            --border:#27272a;--border-subtle:#1f1f23;
+            --text:#fafafa;--text-secondary:#a1a1aa;--text-muted:#71717a;
+            --accent:#6366f1;--accent-light:#818cf8;--accent-glow:rgba(99,102,241,.15);
+            --green:#22c55e;--green-bg:rgba(34,197,94,.1);--green-border:rgba(34,197,94,.2);
+            --red:#ef4444;--red-bg:rgba(239,68,68,.1);--red-border:rgba(239,68,68,.2);
+            --amber:#f59e0b;--amber-bg:rgba(245,158,11,.1);--amber-border:rgba(245,158,11,.2);
+            --blue:#3b82f6;--blue-bg:rgba(59,130,246,.1);--blue-border:rgba(59,130,246,.2);
+            --purple:#a855f7;--purple-bg:rgba(168,85,247,.1);--purple-border:rgba(168,85,247,.2);
+            --cyan:#06b6d4;--cyan-bg:rgba(6,182,212,.1);--cyan-border:rgba(6,182,212,.2);
+            --rose:#f43f5e;--rose-bg:rgba(244,63,94,.1);
+            --radius:12px;--radius-sm:8px;--radius-xs:6px;
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.5;
-        }
+        body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+        .layout{display:flex;min-height:100vh}
 
         /* Sidebar */
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 240px;
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border);
-            padding: 20px 0;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-        }
+        .sidebar{width:260px;background:var(--bg-card);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;z-index:100}
+        .sidebar-brand{padding:24px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+        .brand-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#a855f7);display:flex;align-items:center;justify-content:center}
+        .brand-icon svg{width:20px;height:20px;fill:#fff}
+        .brand-text{font-size:15px;font-weight:700;letter-spacing:-.3px}
+        .brand-sub{font-size:11px;color:var(--text-muted);font-weight:400}
+        .sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:2px}
+        .nav-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;text-decoration:none;border:1px solid transparent}
+        .nav-link:hover{background:var(--bg-elevated);color:var(--text)}
+        .nav-link.active{background:var(--accent-glow);color:var(--accent-light);border-color:rgba(99,102,241,.15)}
+        .nav-link svg{width:16px;height:16px;fill:currentColor;opacity:.7;flex-shrink:0}
+        .nav-link.active svg{opacity:1}
+        .nav-sep{height:1px;background:var(--border);margin:8px 0}
+        .sidebar-footer{padding:16px 16px 20px;border-top:1px solid var(--border)}
+        .user-pill{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-sm);transition:background .15s}
+        .user-pill:hover{background:var(--bg-elevated)}
+        .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#a855f7);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;flex-shrink:0}
+        .user-meta{flex:1;min-width:0}
+        .user-meta .name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .user-meta .role{font-size:11px;color:var(--text-muted)}
+        .btn-signout{display:block;width:100%;padding:8px;margin-top:10px;border:1px solid var(--border);border-radius:var(--radius-xs);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;text-align:center;text-decoration:none;font-family:inherit}
+        .btn-signout:hover{background:var(--bg-elevated);color:var(--text);border-color:var(--text-muted)}
 
-        .sidebar-brand {
-            padding: 0 20px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        /* Main */
+        .main{margin-left:260px;flex:1;min-width:0}
+        .topbar{position:sticky;top:0;z-index:50;background:rgba(9,9,11,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between}
+        .topbar-title{font-size:15px;font-weight:600;letter-spacing:-.2px}
+        .topbar-actions{display:flex;align-items:center;gap:10px}
+        .org-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--accent-glow);border:1px solid rgba(99,102,241,.2);font-size:12px;color:var(--accent-light);font-weight:500}
+        .org-chip svg{width:12px;height:12px;fill:currentColor}
+        .btn{padding:7px 14px;border:1px solid var(--border);border-radius:var(--radius-xs);background:var(--bg-card);color:var(--text);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+        .btn:hover{border-color:var(--text-muted);background:var(--bg-elevated)}
+        .btn svg{width:14px;height:14px;fill:currentColor}
+        .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+        .btn-primary:hover{background:var(--accent-light);border-color:var(--accent-light)}
 
-        .sidebar-brand svg {
-            width: 28px;
-            height: 28px;
-            fill: var(--text-primary);
-            flex-shrink: 0;
-        }
+        .content{padding:28px 32px 48px}
 
-        .sidebar-brand span {
-            font-size: 15px;
-            font-weight: 600;
-        }
+        /* Metric Cards */
+        .metrics-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:28px}
+        .metric-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;transition:border-color .2s,box-shadow .2s}
+        .metric-card:hover{border-color:var(--text-muted);box-shadow:0 4px 24px rgba(0,0,0,.2)}
+        .metric-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:16px}
+        .metric-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--text-muted);margin-bottom:6px}
+        .metric-value{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1}
+        .metric-sub{font-size:11px;color:var(--text-muted);margin-top:6px}
 
-        .sidebar-nav {
-            flex: 1;
-            padding: 12px 10px;
-        }
+        /* Section */
+        .section{margin-bottom:32px}
+        .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+        .section-title{font-size:16px;font-weight:700;letter-spacing:-.3px}
+        .section-badge{padding:3px 10px;border-radius:12px;background:var(--bg-elevated);font-size:11px;color:var(--text-secondary);font-weight:500}
 
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 14px;
-            border-radius: 8px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 14px;
-            transition: all 0.15s;
-            cursor: pointer;
-        }
+        /* DORA Strip */
+        .dora-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+        .dora-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px 20px;text-align:center;transition:border-color .2s}
+        .dora-card:hover{border-color:var(--text-muted)}
+        .dora-emoji{font-size:24px;margin-bottom:10px}
+        .dora-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin-bottom:8px}
+        .dora-value{font-size:28px;font-weight:800;letter-spacing:-.5px}
+        .dora-unit{font-size:11px;color:var(--text-muted);margin-top:4px}
 
-        .nav-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
-        .nav-item.active { background: var(--bg-tertiary); color: var(--text-primary); }
-
-        .nav-item svg { width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
-
-        .sidebar-footer {
-            padding: 16px 20px;
-            border-top: 1px solid var(--border);
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--bg-tertiary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--accent);
-        }
-
-        .user-name { font-size: 13px; font-weight: 500; }
-        .user-role { font-size: 11px; color: var(--text-secondary); }
-
-        .btn-logout {
-            display: block;
-            width: 100%;
-            padding: 8px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: transparent;
-            color: var(--text-secondary);
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.15s;
-            text-align: center;
-            text-decoration: none;
-        }
-
-        .btn-logout:hover { background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--text-secondary); }
-
-        /* Main Content */
-        .main {
-            margin-left: 240px;
-            min-height: 100vh;
-        }
-
-        .topbar {
-            position: sticky;
-            top: 0;
-            background: rgba(13,17,23,.85);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
-            padding: 14px 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            z-index: 50;
-        }
-
-        .topbar h1 {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .topbar-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .org-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 12px;
-            border-radius: 20px;
-            background: var(--blue-bg);
-            border: 1px solid rgba(88,166,255,.2);
-            font-size: 13px;
-            color: var(--accent);
-            font-weight: 500;
-        }
-
-        .btn-refresh {
-            padding: 7px 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-refresh:hover { border-color: var(--accent); }
-        .btn-refresh svg { width: 14px; height: 14px; fill: currentColor; }
-
-        .content { padding: 24px 28px; }
-
-        /* Stats Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-        }
-
-        .stat-card.blue::before { background: var(--accent); }
-        .stat-card.green::before { background: var(--green); }
-        .stat-card.orange::before { background: var(--orange); }
-        .stat-card.purple::before { background: var(--purple); }
-        .stat-card.red::before { background: var(--red); }
-        .stat-card.cyan::before { background: var(--cyan); }
-
-        .stat-label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            line-height: 1.2;
-        }
-
-        .stat-card.blue .stat-value { color: var(--accent); }
-        .stat-card.green .stat-value { color: var(--green); }
-        .stat-card.orange .stat-value { color: var(--orange); }
-        .stat-card.purple .stat-value { color: var(--purple); }
-        .stat-card.red .stat-value { color: var(--red); }
-        .stat-card.cyan .stat-value { color: var(--cyan); }
-
-        .stat-sub {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        /* Panels */
-        .panel {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            margin-bottom: 24px;
-            overflow: hidden;
-        }
-
-        .panel-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .panel-title {
-            font-size: 15px;
-            font-weight: 600;
-        }
-
-        .panel-body { padding: 0; }
-        .panel-body.padded { padding: 20px; }
-
-        /* Charts Grid */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 300px;
-            padding: 16px;
-        }
+        /* Charts */
+        .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}
+        .chart-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+        .chart-head{padding:16px 20px;border-bottom:1px solid var(--border-subtle);font-size:13px;font-weight:600}
+        .chart-body{padding:16px;height:280px;position:relative}
 
         /* Tables */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
+        .table-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+        .table-head{padding:16px 20px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between}
+        .table-title{font-size:13px;font-weight:600}
+        table.dt{width:100%;border-collapse:collapse;font-size:13px}
+        table.dt thead th{text-align:left;padding:10px 16px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);font-weight:600;background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0}
+        table.dt thead th:hover{color:var(--text-secondary)}
+        table.dt thead th.sorted{color:var(--accent-light)}
+        table.dt tbody tr{border-bottom:1px solid var(--border-subtle);transition:background .1s}
+        table.dt tbody tr:last-child{border-bottom:none}
+        table.dt tbody tr:hover{background:rgba(99,102,241,.04)}
+        table.dt td{padding:10px 16px;white-space:nowrap}
+        table.dt .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+        table.dt .dev-name{font-weight:600;color:var(--text)}
+        table.dt .repo-link{font-weight:600;color:var(--accent-light)}
+        table.dt .green{color:var(--green)}
+        table.dt .red{color:var(--red)}
+        .lang-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;letter-spacing:.3px}
+        .lang-java{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+        .lang-javascript{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+        .lang-typescript{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
+        .lang-default{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+        .repos-col{color:var(--text-muted);font-size:11px;max-width:200px;white-space:normal;line-height:1.4}
 
-        .data-table thead th {
-            text-align: left;
-            padding: 10px 16px;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            font-weight: 600;
-            background: var(--bg-tertiary);
-            border-bottom: 1px solid var(--border);
-            white-space: nowrap;
-            cursor: pointer;
-            user-select: none;
-            position: relative;
-        }
-
-        .data-table thead th:hover {
-            color: var(--text-primary);
-        }
-
-        .data-table thead th .sort-icon {
-            margin-left: 4px;
-            opacity: 0.3;
-        }
-
-        .data-table thead th.sorted .sort-icon {
-            opacity: 1;
-            color: var(--accent);
-        }
-
-        .data-table tbody tr {
-            border-bottom: 1px solid var(--border);
-            transition: background 0.1s;
-        }
-
-        .data-table tbody tr:last-child { border-bottom: none; }
-        .data-table tbody tr:hover { background: rgba(88,166,255,.04); }
-
-        .data-table td {
-            padding: 10px 16px;
-            color: var(--text-primary);
-            white-space: nowrap;
-        }
-
-        .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
-        .data-table .dev-name { font-weight: 500; }
-        .data-table .repo-name { font-weight: 500; color: var(--accent); }
-        .data-table .repos-list { color: var(--text-secondary); font-size: 12px; max-width: 240px; white-space: normal; }
-
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-
-        .badge-lang {
-            background: var(--purple-bg);
-            color: var(--purple);
-            border: 1px solid rgba(188,140,255,.2);
-        }
-
-        /* DORA Cards */
-        .dora-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .dora-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .dora-card .dora-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 12px;
-            font-size: 18px;
-        }
-
-        .dora-card .dora-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .dora-card .dora-value {
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .dora-card .dora-unit {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        /* Section Headers */
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .section-header h2 {
-            font-size: 17px;
-            font-weight: 600;
-        }
-
-        .section-header .section-count {
-            padding: 2px 8px;
-            border-radius: 10px;
-            background: var(--bg-tertiary);
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            z-index: 1000;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.3s;
-        }
-
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .toast.success { background: var(--green); color: #fff; }
-        .toast.error { background: var(--red); color: #fff; }
+        /* Repo Explorer */
+        .repo-explorer{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:28px}
+        .repo-explorer-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+        .repo-tabs{display:flex;gap:4px;padding:12px 16px;border-bottom:1px solid var(--border-subtle);overflow-x:auto;scrollbar-width:none}
+        .repo-tabs::-webkit-scrollbar{display:none}
+        .repo-tab{padding:6px 14px;border-radius:var(--radius-xs);font-size:12px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap;border:1px solid transparent;background:transparent}
+        .repo-tab:hover{background:var(--bg-elevated);color:var(--text)}
+        .repo-tab.active{background:var(--accent-glow);color:var(--accent-light);border-color:rgba(99,102,241,.2)}
+        .repo-content{min-height:200px}
+        .repo-loading{display:flex;align-items:center;justify-content:center;padding:48px;color:var(--text-muted);font-size:13px;gap:8px}
+        .repo-empty{display:flex;align-items:center;justify-content:center;padding:48px;color:var(--text-muted);font-size:13px}
 
         /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
-        }
+        .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center}
+        .empty-icon{width:56px;height:56px;border-radius:16px;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:24px}
+        .empty-title{font-size:16px;font-weight:600;margin-bottom:6px}
+        .empty-desc{font-size:13px;color:var(--text-muted);max-width:320px}
 
-        .empty-state svg { width: 48px; height: 48px; fill: var(--text-muted); margin-bottom: 16px; }
-        .empty-state h3 { font-size: 16px; color: var(--text-primary); margin-bottom: 8px; }
-        .empty-state p { font-size: 14px; }
+        /* Toast */
+        .toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;z-index:1000;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1)}
+        .toast.show{transform:translateY(0);opacity:1}
+        .toast.success{background:var(--green);color:#fff}
+        .toast.error{background:var(--red);color:#fff}
 
-        .spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(255,255,255,.3);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
+        .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .5s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .dot-pulse{display:inline-flex;gap:4px}
+        .dot-pulse span{width:4px;height:4px;border-radius:50%;background:var(--text-muted);animation:pulse 1.2s ease-in-out infinite}
+        .dot-pulse span:nth-child(2){animation-delay:.2s}
+        .dot-pulse span:nth-child(3){animation-delay:.4s}
+        @keyframes pulse{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 
-        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Scrollbar */
+        ::-webkit-scrollbar{width:6px;height:6px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+        ::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
 
-        @media (max-width: 1200px) {
-            .charts-grid { grid-template-columns: 1fr; }
-            .dora-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .main { margin-left: 0; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .dora-grid { grid-template-columns: 1fr; }
-        }
+        @media(max-width:1200px){.chart-grid{grid-template-columns:1fr}.dora-strip{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:768px){.sidebar{display:none}.main{margin-left:0}.metrics-row{grid-template-columns:repeat(2,1fr)}.dora-strip{grid-template-columns:1fr 1fr}}
     </style>
 </head>
 <body>
+<div class="layout">
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-brand">
-            <svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-            <span>GitHub Metrics</span>
+            <div class="brand-icon">
+                <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            </div>
+            <div>
+                <div class="brand-text">Metrics</div>
+                <div class="brand-sub">GitHub Analytics</div>
+            </div>
         </div>
         <nav class="sidebar-nav">
-            <a href="#overview" class="nav-item active" onclick="scrollToSection('overview', this)">
-                <svg viewBox="0 0 16 16"><path d="M6.5 1.75a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v1.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-1.5zm3 4a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v1.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-1.5zM1.75 5A.75.75 0 001 5.75v1.5c0 .414.336.75.75.75h1.5A.75.75 0 004 7.25v-1.5A.75.75 0 003.25 5h-1.5zm0 4a.75.75 0 00-.75.75v1.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75v-1.5A.75.75 0 003.25 9h-1.5zm4 0a.75.75 0 00-.75.75v1.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75v-1.5a.75.75 0 00-.75-.75h-1.5zm4 0a.75.75 0 00-.75.75v1.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75v-1.5a.75.75 0 00-.75-.75h-1.5z"/></svg>
+            <a href="#overview" class="nav-link active" onclick="navTo('overview',this)">
+                <svg viewBox="0 0 16 16"><path d="M0 1.75C0 .784.784 0 1.75 0h3.5C6.216 0 7 .784 7 1.75v3.5A1.75 1.75 0 015.25 7h-3.5A1.75 1.75 0 010 5.25v-3.5zm1.75-.25a.25.25 0 00-.25.25v3.5c0 .138.112.25.25.25h3.5a.25.25 0 00.25-.25v-3.5a.25.25 0 00-.25-.25h-3.5zM0 10.75C0 9.784.784 9 1.75 9h3.5c.966 0 1.75.784 1.75 1.75v3.5A1.75 1.75 0 015.25 16h-3.5A1.75 1.75 0 010 14.25v-3.5zm1.75-.25a.25.25 0 00-.25.25v3.5c0 .138.112.25.25.25h3.5a.25.25 0 00.25-.25v-3.5a.25.25 0 00-.25-.25h-3.5zM9 1.75C9 .784 9.784 0 10.75 0h3.5c.966 0 1.75.784 1.75 1.75v3.5A1.75 1.75 0 0114.25 7h-3.5A1.75 1.75 0 019 5.25v-3.5zm1.75-.25a.25.25 0 00-.25.25v3.5c0 .138.112.25.25.25h3.5a.25.25 0 00.25-.25v-3.5a.25.25 0 00-.25-.25h-3.5zM9 10.75C9 9.784 9.784 9 10.75 9h3.5c.966 0 1.75.784 1.75 1.75v3.5A1.75 1.75 0 0114.25 16h-3.5A1.75 1.75 0 019 14.25v-3.5zm1.75-.25a.25.25 0 00-.25.25v3.5c0 .138.112.25.25.25h3.5a.25.25 0 00.25-.25v-3.5a.25.25 0 00-.25-.25h-3.5z"/></svg>
                 Overview
             </a>
-            <a href="#dora" class="nav-item" onclick="scrollToSection('dora', this)">
+            <a href="#dora" class="nav-link" onclick="navTo('dora',this)">
                 <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm3.25 8.75H8a.75.75 0 01-.75-.75V3.25a.75.75 0 011.5 0V7.25h2.5a.75.75 0 010 1.5z"/></svg>
                 DORA Metrics
             </a>
-            <a href="#developers" class="nav-item" onclick="scrollToSection('developers', this)">
+            <a href="#charts" class="nav-link" onclick="navTo('charts',this)">
+                <svg viewBox="0 0 16 16"><path d="M1.5 14.25V1.75a.25.25 0 00-.25-.25H.75a.75.75 0 010-1.5h.5A1.75 1.75 0 013 1.75v11.5h11.25a.75.75 0 010 1.5H2.75a1.25 1.25 0 01-1.25-1.25zM14.5 1.75a.75.75 0 00-1.5 0v8.5a.75.75 0 001.5 0v-8.5zm-6 4a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0v-4.5zm-3 2a.75.75 0 00-1.5 0v2.5a.75.75 0 001.5 0v-2.5zm6-1a.75.75 0 00-1.5 0v3.5a.75.75 0 001.5 0v-3.5z"/></svg>
+                Analytics
+            </a>
+            <div class="nav-sep"></div>
+            <a href="#repo-explorer" class="nav-link" onclick="navTo('repo-explorer',this)">
+                <svg viewBox="0 0 16 16"><path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 010-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/></svg>
+                Repo Explorer
+            </a>
+            <a href="#developers" class="nav-link" onclick="navTo('developers',this)">
                 <svg viewBox="0 0 16 16"><path d="M10.561 8.073a6.005 6.005 0 013.432 5.142.75.75 0 11-1.498.07 4.5 4.5 0 00-8.99 0 .75.75 0 11-1.498-.07 6.004 6.004 0 013.431-5.142 3.999 3.999 0 115.123 0zM10.5 5a2.5 2.5 0 10-5 0 2.5 2.5 0 005 0z"/></svg>
                 Developers
             </a>
-            <a href="#repositories" class="nav-item" onclick="scrollToSection('repositories', this)">
-                <svg viewBox="0 0 16 16"><path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 010-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/></svg>
+            <a href="#repositories" class="nav-link" onclick="navTo('repositories',this)">
+                <svg viewBox="0 0 16 16"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0114.25 16H1.75A1.75 1.75 0 010 14.25V1.75zM1.75 1.5a.25.25 0 00-.25.25v12.5c0 .138.112.25.25.25h12.5a.25.25 0 00.25-.25V1.75a.25.25 0 00-.25-.25H1.75z"/></svg>
                 Repositories
-            </a>
-            <a href="#charts" class="nav-item" onclick="scrollToSection('charts', this)">
-                <svg viewBox="0 0 16 16"><path d="M1.5 14.25V1.75a.25.25 0 00-.25-.25H.75a.75.75 0 010-1.5h.5A1.75 1.75 0 013 1.75v11.5h11.25a.75.75 0 010 1.5H2.75a1.25 1.25 0 01-1.25-1.25zM14.5 1.75a.75.75 0 00-1.5 0v8.5a.75.75 0 001.5 0v-8.5zm-6 4a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0v-4.5zm-3 2a.75.75 0 00-1.5 0v2.5a.75.75 0 001.5 0v-2.5zm6-1a.75.75 0 00-1.5 0v3.5a.75.75 0 001.5 0v-3.5z"/></svg>
-                Charts
             </a>
         </nav>
         <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar">{{ username[0]|upper }}</div>
-                <div>
-                    <div class="user-name">{{ username }}</div>
-                    <div class="user-role">Administrator</div>
+            <div class="user-pill">
+                <div class="avatar">{{ username[0]|upper }}</div>
+                <div class="user-meta">
+                    <div class="name">{{ username }}</div>
+                    <div class="role">Administrator</div>
                 </div>
             </div>
-            <a href="{{ url_for('logout') }}" class="btn-logout">Sign Out</a>
+            <a href="{{ url_for('logout') }}" class="btn-signout">Sign Out</a>
         </div>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Main -->
     <main class="main">
         <div class="topbar">
-            <h1>Organization Dashboard</h1>
+            <div class="topbar-title">Organization Dashboard</div>
             <div class="topbar-actions">
-                <div class="org-badge">
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 16A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.75.75 0 11.832-1.248l1.064.71c.487.325.793.871.793 1.458v6.456A1.75 1.75 0 0114.25 16h-3.5a.75.75 0 01-.197-.026c-.099.017-.2.026-.303.026h-3a.75.75 0 01-.75-.75V14h-1v1.25a.75.75 0 01-.75.75h-3zm0-1.5h1.5a.25.25 0 00.25-.25V14h5v.25c0 .138.112.25.25.25h1.5V1.75a.25.25 0 00-.25-.25h-8.5a.25.25 0 00-.25.25v12.5c0 .138.112.25.25.25zM3.75 6h.5a.75.75 0 010 1.5h-.5a.75.75 0 010-1.5zM3 3.75A.75.75 0 013.75 3h.5a.75.75 0 010 1.5h-.5A.75.75 0 013 3.75zM3.75 9h.5a.75.75 0 010 1.5h-.5a.75.75 0 010-1.5zM7.75 6h.5a.75.75 0 010 1.5h-.5a.75.75 0 010-1.5zM7 3.75A.75.75 0 017.75 3h.5a.75.75 0 010 1.5h-.5A.75.75 0 017 3.75zM7.75 9h.5a.75.75 0 010 1.5h-.5a.75.75 0 010-1.5z"/></svg>
+                <div class="org-chip">
+                    <svg viewBox="0 0 16 16"><path d="M1.75 16A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.75.75 0 11.832-1.248l1.064.71c.487.325.793.871.793 1.458v6.456A1.75 1.75 0 0114.25 16h-3.5a.75.75 0 01-.197-.026c-.099.017-.2.026-.303.026h-3a.75.75 0 01-.75-.75V14h-1v1.25a.75.75 0 01-.75.75h-3z"/></svg>
                     {{ org }}
                 </div>
-                <button class="btn-refresh" onclick="refreshData()" id="refreshBtn">
+                <button class="btn" onclick="refreshData()" id="refreshBtn">
                     <svg viewBox="0 0 16 16"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5zM1.705 8.005a.75.75 0 01.834.656 5.501 5.501 0 009.592 2.97l-1.204-1.204a.25.25 0 01.177-.427h3.646a.25.25 0 01.25.25v3.646a.25.25 0 01-.427.177l-1.38-1.38A7.001 7.001 0 011.05 8.84a.75.75 0 01.656-.834z"/></svg>
-                    Refresh Data
+                    Refresh
                 </button>
             </div>
         </div>
 
         <div class="content">
-            {% if not data.repos and not data.developers %}
+        {% if not data.repos and not data.developers %}
             <div class="empty-state">
-                <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm3.25 8.75H8a.75.75 0 01-.75-.75V3.25a.75.75 0 011.5 0V7.25h2.5a.75.75 0 010 1.5z"/></svg>
-                <h3>No metrics data yet</h3>
-                <p>Click "Refresh Data" to fetch metrics from GitHub, or run the CLI tool first.</p>
+                <div class="empty-icon">📊</div>
+                <div class="empty-title">No metrics data yet</div>
+                <div class="empty-desc">Click "Refresh" to fetch metrics from GitHub, or run the CLI tool first.</div>
             </div>
-            {% else %}
+        {% else %}
 
-            <!-- Overview Stats -->
+            <!-- Overview -->
             <section id="overview">
-                <div class="stats-grid">
-                    <div class="stat-card blue">
-                        <div class="stat-label">Repositories</div>
-                        <div class="stat-value">{{ data.summary.total_repos }}</div>
-                        <div class="stat-sub">Active in period</div>
+                <div class="metrics-row">
+                    <div class="metric-card">
+                        <div class="metric-icon" style="background:var(--accent-glow)">📦</div>
+                        <div class="metric-label">Repositories</div>
+                        <div class="metric-value" style="color:var(--accent-light)">{{ data.summary.total_repos }}</div>
+                        <div class="metric-sub">Active in period</div>
                     </div>
-                    <div class="stat-card green">
-                        <div class="stat-label">Total Commits</div>
-                        <div class="stat-value">{{ "{:,}".format(data.summary.total_commits) }}</div>
-                        <div class="stat-sub">Last 3 months</div>
+                    <div class="metric-card">
+                        <div class="metric-icon" style="background:var(--green-bg)">⚡</div>
+                        <div class="metric-label">Total Commits</div>
+                        <div class="metric-value" style="color:var(--green)">{{ "{:,}".format(data.summary.total_commits) }}</div>
+                        <div class="metric-sub">Last 3 months</div>
                     </div>
-                    <div class="stat-card purple">
-                        <div class="stat-label">Pull Requests</div>
-                        <div class="stat-value">{{ "{:,}".format(data.summary.total_prs) }}</div>
-                        <div class="stat-sub">Opened / updated</div>
+                    <div class="metric-card">
+                        <div class="metric-icon" style="background:var(--purple-bg)">🔀</div>
+                        <div class="metric-label">Pull Requests</div>
+                        <div class="metric-value" style="color:var(--purple)">{{ "{:,}".format(data.summary.total_prs) }}</div>
+                        <div class="metric-sub">Opened / updated</div>
                     </div>
-                    <div class="stat-card orange">
-                        <div class="stat-label">Developers</div>
-                        <div class="stat-value">{{ data.summary.total_devs }}</div>
-                        <div class="stat-sub">Active contributors</div>
+                    <div class="metric-card">
+                        <div class="metric-icon" style="background:var(--cyan-bg)">👥</div>
+                        <div class="metric-label">Developers</div>
+                        <div class="metric-value" style="color:var(--cyan)">{{ data.summary.total_devs }}</div>
+                        <div class="metric-sub">Active contributors</div>
                     </div>
-                    <div class="stat-card cyan">
-                        <div class="stat-label">Deployments</div>
-                        <div class="stat-value">{{ "{:,}".format(data.summary.total_deploys) }}</div>
-                        <div class="stat-sub">CI/CD runs</div>
+                    <div class="metric-card">
+                        <div class="metric-icon" style="background:var(--amber-bg)">🚀</div>
+                        <div class="metric-label">Deployments</div>
+                        <div class="metric-value" style="color:var(--amber)">{{ "{:,}".format(data.summary.total_deploys) }}</div>
+                        <div class="metric-sub">CI/CD workflow runs</div>
                     </div>
-                    <div class="stat-card red">
-                        <div class="stat-label">Avg Lead Time</div>
-                        <div class="stat-value">{{ data.summary.avg_lead_time }}h</div>
-                        <div class="stat-sub">Branch to merge</div>
+                    <div class="metric-card">
+                        <div class="metric-icon" style="background:var(--rose-bg)">🕐</div>
+                        <div class="metric-label">Avg Lead Time</div>
+                        <div class="metric-value" style="color:var(--rose)">{{ data.summary.avg_lead_time }}h</div>
+                        <div class="metric-sub">Branch to merge</div>
                     </div>
                 </div>
             </section>
 
-            <!-- DORA Metrics -->
+            <!-- DORA -->
             <section id="dora">
-                <div class="section-header">
-                    <h2>DORA Metrics</h2>
-                </div>
-                <div class="dora-grid">
+                <div class="section"><div class="section-head"><div class="section-title">DORA Metrics</div></div></div>
+                <div class="dora-strip">
                     <div class="dora-card">
-                        <div class="dora-icon" style="background: var(--blue-bg);">⏱️</div>
+                        <div class="dora-emoji">⏱️</div>
                         <div class="dora-label">Lead Time</div>
-                        <div class="dora-value" style="color: var(--accent);">{{ data.summary.avg_lead_time }}</div>
+                        <div class="dora-value" style="color:var(--accent-light)">{{ data.summary.avg_lead_time }}</div>
                         <div class="dora-unit">hours (avg)</div>
                     </div>
                     <div class="dora-card">
-                        <div class="dora-icon" style="background: var(--green-bg);">🚀</div>
+                        <div class="dora-emoji">🚀</div>
                         <div class="dora-label">Deploy Frequency</div>
-                        <div class="dora-value" style="color: var(--green);">{{ data.summary.total_deploys }}</div>
+                        <div class="dora-value" style="color:var(--green)">{{ data.summary.total_deploys }}</div>
                         <div class="dora-unit">total deployments</div>
                     </div>
                     <div class="dora-card">
-                        <div class="dora-icon" style="background: var(--red-bg);">❌</div>
+                        <div class="dora-emoji">⚠️</div>
                         <div class="dora-label">Change Failure Rate</div>
-                        <div class="dora-value" style="color: var(--red);">{{ data.summary.avg_fail_rate }}%</div>
+                        <div class="dora-value" style="color:var(--red)">{{ data.summary.avg_fail_rate }}%</div>
                         <div class="dora-unit">of deployments</div>
                     </div>
                     <div class="dora-card">
-                        <div class="dora-icon" style="background: var(--orange-bg);">🔧</div>
+                        <div class="dora-emoji">🔧</div>
                         <div class="dora-label">Avg Deploy Time</div>
-                        <div class="dora-value" style="color: var(--orange);">{{ data.summary.avg_deploy_time }}</div>
+                        <div class="dora-value" style="color:var(--amber)">{{ data.summary.avg_deploy_time }}</div>
                         <div class="dora-unit">minutes</div>
                     </div>
                 </div>
@@ -636,317 +313,222 @@
 
             <!-- Charts -->
             <section id="charts">
-                <div class="section-header">
-                    <h2>Analytics</h2>
+                <div class="section"><div class="section-head"><div class="section-title">Analytics</div></div></div>
+                <div class="chart-grid">
+                    <div class="chart-panel"><div class="chart-head">Commits by Repository</div><div class="chart-body"><canvas id="commitsChart"></canvas></div></div>
+                    <div class="chart-panel"><div class="chart-head">Pull Requests by Repository</div><div class="chart-body"><canvas id="prsChart"></canvas></div></div>
+                    <div class="chart-panel"><div class="chart-head">Top Contributors (Lines Added)</div><div class="chart-body"><canvas id="devsChart"></canvas></div></div>
+                    <div class="chart-panel"><div class="chart-head">Lead Time by Repository</div><div class="chart-body"><canvas id="leadTimeChart"></canvas></div></div>
                 </div>
-                <div class="charts-grid">
-                    <div class="panel">
-                        <div class="panel-header"><span class="panel-title">Commits by Repository</span></div>
-                        <div class="chart-container"><canvas id="commitsChart"></canvas></div>
+            </section>
+
+            <!-- Repo Explorer -->
+            <section id="repo-explorer">
+                <div class="repo-explorer">
+                    <div class="repo-explorer-head">
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <span class="table-title">Repository Explorer</span>
+                            <span class="section-badge">Select a repo to view developer activity</span>
+                        </div>
                     </div>
-                    <div class="panel">
-                        <div class="panel-header"><span class="panel-title">Pull Requests by Repository</span></div>
-                        <div class="chart-container"><canvas id="prsChart"></canvas></div>
+                    <div class="repo-tabs" id="repoTabs">
+                        {% for rname in repo_names %}
+                        <div class="repo-tab" data-repo="{{ rname }}" onclick="selectRepo('{{ rname }}', this)">{{ rname.replace('qomitto-', '') }}</div>
+                        {% endfor %}
                     </div>
-                    <div class="panel">
-                        <div class="panel-header"><span class="panel-title">Top Contributors (Lines Added)</span></div>
-                        <div class="chart-container"><canvas id="devsChart"></canvas></div>
-                    </div>
-                    <div class="panel">
-                        <div class="panel-header"><span class="panel-title">Repository Lead Times</span></div>
-                        <div class="chart-container"><canvas id="leadTimeChart"></canvas></div>
+                    <div class="repo-content" id="repoContent">
+                        <div class="repo-empty">Select a repository above to view per-repo developer activity</div>
                     </div>
                 </div>
             </section>
 
-            <!-- Developer Activity -->
+            <!-- Developers -->
             <section id="developers">
-                <div class="section-header">
-                    <h2>Developer Activity</h2>
-                    <span class="section-count">{{ data.developers|length }} developers</span>
-                </div>
-                <div class="panel">
-                    <div class="panel-body">
-                        <table class="data-table" id="devTable">
-                            <thead>
-                                <tr>
-                                    <th onclick="sortTable('devTable', 0, 'string')">Developer <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('devTable', 1, 'number')">Commits <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('devTable', 2, 'number')">Lines Added <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('devTable', 3, 'number')">Lines Deleted <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('devTable', 4, 'number')">PRs Opened <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('devTable', 5, 'string')">PRs Reviewed <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('devTable', 6, 'string')">PR Comments <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('devTable', 7, 'string')">Repositories <span class="sort-icon">↕</span></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for dev in data.developers %}
-                                <tr>
-                                    <td class="dev-name">{{ dev.Developer }}</td>
-                                    <td class="num">{{ "{:,}".format(dev.Commits) }}</td>
-                                    <td class="num" style="color: var(--green);">+{{ "{:,}".format(dev['Lines Added']) }}</td>
-                                    <td class="num" style="color: var(--red);">-{{ "{:,}".format(dev['Lines Deleted']) }}</td>
-                                    <td class="num">{{ dev['PRs Opened'] }}</td>
-                                    <td class="num">{{ dev['PRs Reviewed'] }}</td>
-                                    <td class="num">{{ dev['PR Comments'] }}</td>
-                                    <td class="repos-list">{{ dev.get('Repositories', '') }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                <div class="section"><div class="section-head">
+                    <div class="section-title">Developer Activity</div>
+                    <span class="section-badge">{{ data.developers|length }} developers</span>
+                </div></div>
+                <div class="table-panel">
+                    <div style="overflow-x:auto">
+                    <table class="dt" id="devTable">
+                        <thead><tr>
+                            <th onclick="sortTbl('devTable',0,'s')">Developer</th>
+                            <th onclick="sortTbl('devTable',1,'n')">Commits</th>
+                            <th onclick="sortTbl('devTable',2,'n')">Lines Added</th>
+                            <th onclick="sortTbl('devTable',3,'n')">Lines Deleted</th>
+                            <th onclick="sortTbl('devTable',4,'n')">PRs Opened</th>
+                            <th onclick="sortTbl('devTable',5,'n')">PRs Reviewed</th>
+                            <th onclick="sortTbl('devTable',6,'n')">PR Comments</th>
+                            <th onclick="sortTbl('devTable',7,'s')">Repositories</th>
+                        </tr></thead>
+                        <tbody>
+                        {% for dev in data.developers %}
+                        <tr>
+                            <td class="dev-name">{{ dev.Developer }}</td>
+                            <td class="num">{{ "{:,}".format(dev.Commits) }}</td>
+                            <td class="num green">+{{ "{:,}".format(dev['Lines Added']) }}</td>
+                            <td class="num red">-{{ "{:,}".format(dev['Lines Deleted']) }}</td>
+                            <td class="num">{{ dev['PRs Opened'] }}</td>
+                            <td class="num">{{ dev['PRs Reviewed'] }}</td>
+                            <td class="num">{{ dev['PR Comments'] }}</td>
+                            <td class="repos-col">{{ dev.get('Repositories','') }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
                     </div>
                 </div>
             </section>
 
-            <!-- Repository Metrics -->
+            <!-- Repositories -->
             <section id="repositories">
-                <div class="section-header">
-                    <h2>Repository Metrics</h2>
-                    <span class="section-count">{{ data.repos|length }} repositories</span>
-                </div>
-                <div class="panel">
-                    <div class="panel-body">
-                        <table class="data-table" id="repoTable">
-                            <thead>
-                                <tr>
-                                    <th onclick="sortTable('repoTable', 0, 'string')">Repository <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('repoTable', 1, 'number')">Commits <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('repoTable', 2, 'number')">PRs <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('repoTable', 3, 'number')">Lead Time (h) <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('repoTable', 4, 'number')">Deploys <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('repoTable', 5, 'number')">Fail % <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('repoTable', 6, 'number')">Deploy (m) <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('repoTable', 7, 'string')">Language <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('repoTable', 8, 'number')">Branches <span class="sort-icon">↕</span></th>
-                                    <th onclick="sortTable('repoTable', 9, 'number')">Contributors <span class="sort-icon">↕</span></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for repo in data.repos %}
-                                <tr>
-                                    <td class="repo-name">{{ repo.Repository }}</td>
-                                    <td class="num">{{ repo.Commits }}</td>
-                                    <td class="num">{{ repo.PRs }}</td>
-                                    <td class="num">{{ repo['Lead Time (h)'] }}</td>
-                                    <td class="num">{{ repo.Deploys }}</td>
-                                    <td class="num">{{ repo['Fail %'] }}%</td>
-                                    <td class="num">{{ repo['Deploy (m)'] }}</td>
-                                    <td><span class="badge badge-lang">{{ repo.Language }}</span></td>
-                                    <td class="num">{{ repo.Branches }}</td>
-                                    <td class="num">{{ repo.Contributors }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                <div class="section"><div class="section-head">
+                    <div class="section-title">Repository Metrics</div>
+                    <span class="section-badge">{{ data.repos|length }} repositories</span>
+                </div></div>
+                <div class="table-panel">
+                    <div style="overflow-x:auto">
+                    <table class="dt" id="repoTable">
+                        <thead><tr>
+                            <th onclick="sortTbl('repoTable',0,'s')">Repository</th>
+                            <th onclick="sortTbl('repoTable',1,'n')">Commits</th>
+                            <th onclick="sortTbl('repoTable',2,'n')">PRs</th>
+                            <th onclick="sortTbl('repoTable',3,'n')">Lead Time (h)</th>
+                            <th onclick="sortTbl('repoTable',4,'n')">Deploys</th>
+                            <th onclick="sortTbl('repoTable',5,'n')">Fail %</th>
+                            <th onclick="sortTbl('repoTable',6,'n')">Deploy (m)</th>
+                            <th onclick="sortTbl('repoTable',7,'s')">Language</th>
+                            <th onclick="sortTbl('repoTable',8,'n')">Branches</th>
+                            <th onclick="sortTbl('repoTable',9,'n')">Contributors</th>
+                        </tr></thead>
+                        <tbody>
+                        {% for repo in data.repos %}
+                        <tr>
+                            <td class="repo-link">{{ repo.Repository }}</td>
+                            <td class="num">{{ repo.Commits }}</td>
+                            <td class="num">{{ repo.PRs }}</td>
+                            <td class="num">{{ repo['Lead Time (h)'] }}</td>
+                            <td class="num">{{ repo.Deploys }}</td>
+                            <td class="num">{{ repo['Fail %'] }}%</td>
+                            <td class="num">{{ repo['Deploy (m)'] }}</td>
+                            <td>{% set lang = repo.Language|lower %}<span class="lang-badge {% if lang == 'java' %}lang-java{% elif lang == 'javascript' %}lang-javascript{% elif lang == 'typescript' %}lang-typescript{% else %}lang-default{% endif %}">{{ repo.Language }}</span></td>
+                            <td class="num">{{ repo.Branches }}</td>
+                            <td class="num">{{ repo.Contributors }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
                     </div>
                 </div>
             </section>
-
-            {% endif %}
+        {% endif %}
         </div>
     </main>
+</div>
 
-    <div class="toast" id="toast"></div>
+<div class="toast" id="toast"></div>
 
-    <script>
-        const repoData = {{ data.repos | tojson }};
-        const devData = {{ data.developers | tojson }};
+<script>
+const repoData = {{ data.repos | tojson }};
+const devData = {{ data.developers | tojson }};
+const ORG = '{{ org }}';
 
-        const CHART_COLORS = [
-            '#58a6ff', '#3fb950', '#bc8cff', '#d29922', '#f85149',
-            '#39d2c0', '#f778ba', '#79c0ff', '#7ee787', '#d2a8ff'
-        ];
+const C = ['#6366f1','#22c55e','#a855f7','#f59e0b','#ef4444','#06b6d4','#f43f5e','#818cf8','#4ade80','#c084fc'];
+Chart.defaults.color = '#71717a';
+Chart.defaults.borderColor = '#27272a';
+Chart.defaults.font.family = "'Inter',system-ui,sans-serif";
+Chart.defaults.font.size = 11;
 
-        Chart.defaults.color = '#8b949e';
-        Chart.defaults.borderColor = '#30363d';
-        Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-
-        if (repoData.length > 0) {
-            // Commits by Repo
-            new Chart(document.getElementById('commitsChart'), {
-                type: 'bar',
-                data: {
-                    labels: repoData.map(r => r.Repository.replace('qomitto-', '')),
-                    datasets: [{
-                        label: 'Commits',
-                        data: repoData.map(r => r.Commits),
-                        backgroundColor: CHART_COLORS.map(c => c + '40'),
-                        borderColor: CHART_COLORS,
-                        borderWidth: 1,
-                        borderRadius: 4,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#21262d' } },
-                        x: { grid: { display: false }, ticks: { maxRotation: 45 } }
-                    }
-                }
-            });
-
-            // PRs by Repo
-            new Chart(document.getElementById('prsChart'), {
-                type: 'bar',
-                data: {
-                    labels: repoData.map(r => r.Repository.replace('qomitto-', '')),
-                    datasets: [{
-                        label: 'Pull Requests',
-                        data: repoData.map(r => r.PRs),
-                        backgroundColor: CHART_COLORS.map(c => c + '40'),
-                        borderColor: CHART_COLORS,
-                        borderWidth: 1,
-                        borderRadius: 4,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#21262d' } },
-                        x: { grid: { display: false }, ticks: { maxRotation: 45 } }
-                    }
-                }
-            });
-
-            // Lead Times
-            new Chart(document.getElementById('leadTimeChart'), {
-                type: 'bar',
-                data: {
-                    labels: repoData.map(r => r.Repository.replace('qomitto-', '')),
-                    datasets: [{
-                        label: 'Lead Time (hours)',
-                        data: repoData.map(r => r['Lead Time (h)']),
-                        backgroundColor: repoData.map(r => {
-                            const lt = r['Lead Time (h)'];
-                            if (lt <= 24) return '#3fb95060';
-                            if (lt <= 72) return '#d2992260';
-                            return '#f8514960';
-                        }),
-                        borderColor: repoData.map(r => {
-                            const lt = r['Lead Time (h)'];
-                            if (lt <= 24) return '#3fb950';
-                            if (lt <= 72) return '#d29922';
-                            return '#f85149';
-                        }),
-                        borderWidth: 1,
-                        borderRadius: 4,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#21262d' }, title: { display: true, text: 'Hours' } },
-                        x: { grid: { display: false }, ticks: { maxRotation: 45 } }
-                    }
-                }
-            });
+function makeBarOpts(horizontal){
+    return {
+        responsive:true,maintainAspectRatio:false,
+        indexAxis: horizontal ? 'y' : 'x',
+        plugins:{legend:{display:false}},
+        scales:{
+            [horizontal?'x':'y']:{beginAtZero:true,grid:{color:'#1f1f23'}},
+            [horizontal?'y':'x']:{grid:{display:false},ticks:{maxRotation:45}}
         }
+    };
+}
 
-        if (devData.length > 0) {
-            const topDevs = devData.slice(0, 10);
-            new Chart(document.getElementById('devsChart'), {
-                type: 'horizontalBar' in Chart ? 'horizontalBar' : 'bar',
-                data: {
-                    labels: topDevs.map(d => d.Developer),
-                    datasets: [{
-                        label: 'Lines Added',
-                        data: topDevs.map(d => d['Lines Added']),
-                        backgroundColor: '#3fb95040',
-                        borderColor: '#3fb950',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { beginAtZero: true, grid: { color: '#21262d' } },
-                        y: { grid: { display: false } }
-                    }
-                }
-            });
+if(repoData.length){
+    const labels = repoData.map(r=>r.Repository.replace('qomitto-',''));
+    new Chart(document.getElementById('commitsChart'),{type:'bar',data:{labels,datasets:[{data:repoData.map(r=>r.Commits),backgroundColor:C.map(c=>c+'30'),borderColor:C,borderWidth:1.5,borderRadius:6}]},options:makeBarOpts(false)});
+    new Chart(document.getElementById('prsChart'),{type:'bar',data:{labels,datasets:[{data:repoData.map(r=>r.PRs),backgroundColor:C.map(c=>c+'30'),borderColor:C,borderWidth:1.5,borderRadius:6}]},options:makeBarOpts(false)});
+    new Chart(document.getElementById('leadTimeChart'),{type:'bar',data:{labels,datasets:[{data:repoData.map(r=>r['Lead Time (h)']),backgroundColor:repoData.map(r=>{const l=r['Lead Time (h)'];return l<=24?'#22c55e30':l<=72?'#f59e0b30':'#ef444430'}),borderColor:repoData.map(r=>{const l=r['Lead Time (h)'];return l<=24?'#22c55e':l<=72?'#f59e0b':'#ef4444'}),borderWidth:1.5,borderRadius:6}]},options:{...makeBarOpts(false),scales:{y:{beginAtZero:true,grid:{color:'#1f1f23'},title:{display:true,text:'Hours',color:'#71717a'}},x:{grid:{display:false},ticks:{maxRotation:45}}}}});
+}
+if(devData.length){
+    const top = devData.slice(0,10);
+    new Chart(document.getElementById('devsChart'),{type:'bar',data:{labels:top.map(d=>d.Developer),datasets:[{data:top.map(d=>d['Lines Added']),backgroundColor:'#22c55e30',borderColor:'#22c55e',borderWidth:1.5,borderRadius:6}]},options:makeBarOpts(true)});
+}
+
+// Table sorting
+function sortTbl(id,col,type){
+    const t=document.getElementById(id),tb=t.querySelector('tbody'),rows=Array.from(tb.rows);
+    const th=t.querySelectorAll('thead th')[col],asc=th.dataset.sort!=='asc';
+    t.querySelectorAll('thead th').forEach(h=>{h.classList.remove('sorted');delete h.dataset.sort});
+    th.classList.add('sorted');th.dataset.sort=asc?'asc':'desc';
+    rows.sort((a,b)=>{let va=a.cells[col].textContent.trim(),vb=b.cells[col].textContent.trim();if(type==='n'){va=parseFloat(va.replace(/[,+\-%]/g,''))||0;vb=parseFloat(vb.replace(/[,+\-%]/g,''))||0}return va<vb?(asc?-1:1):va>vb?(asc?1:-1):0});
+    rows.forEach(r=>tb.appendChild(r));
+}
+
+// Nav
+function navTo(id,el){
+    document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});
+    document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active'));
+    el.classList.add('active');
+}
+
+// Repo Explorer
+async function selectRepo(name,el){
+    document.querySelectorAll('.repo-tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    const box=document.getElementById('repoContent');
+    box.innerHTML='<div class="repo-loading"><span class="dot-pulse"><span></span><span></span><span></span></span> Loading developer metrics…</div>';
+    try{
+        const res=await fetch(`/api/repo-developers/${ORG}/${name}`);
+        const data=await res.json();
+        if(!data.developers||!data.developers.length){
+            box.innerHTML='<div class="repo-empty">No developer activity found for this repository in the analysis period</div>';
+            return;
         }
-
-        // Table sorting
-        function sortTable(tableId, colIdx, type) {
-            const table = document.getElementById(tableId);
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.rows);
-            const th = table.querySelectorAll('thead th')[colIdx];
-            const asc = th.dataset.sort !== 'asc';
-
-            table.querySelectorAll('thead th').forEach(h => {
-                h.classList.remove('sorted');
-                delete h.dataset.sort;
-            });
-            th.classList.add('sorted');
-            th.dataset.sort = asc ? 'asc' : 'desc';
-
-            rows.sort((a, b) => {
-                let va = a.cells[colIdx].textContent.trim();
-                let vb = b.cells[colIdx].textContent.trim();
-                if (type === 'number') {
-                    va = parseFloat(va.replace(/[,+\-%]/g, '')) || 0;
-                    vb = parseFloat(vb.replace(/[,+\-%]/g, '')) || 0;
-                }
-                if (va < vb) return asc ? -1 : 1;
-                if (va > vb) return asc ? 1 : -1;
-                return 0;
-            });
-
-            rows.forEach(row => tbody.appendChild(row));
+        let html='<div style="overflow-x:auto"><table class="dt"><thead><tr>';
+        html+='<th>Developer</th><th>Commits</th><th>Lines Added</th><th>Lines Deleted</th><th>PRs Opened</th><th>PRs Reviewed</th><th>PR Comments</th>';
+        html+='</tr></thead><tbody>';
+        for(const d of data.developers){
+            html+=`<tr>
+                <td class="dev-name">${d.Developer}</td>
+                <td class="num">${d.Commits.toLocaleString()}</td>
+                <td class="num green">+${d['Lines Added'].toLocaleString()}</td>
+                <td class="num red">-${d['Lines Deleted'].toLocaleString()}</td>
+                <td class="num">${d['PRs Opened']}</td>
+                <td class="num">${d['PRs Reviewed']}</td>
+                <td class="num">${d['PR Comments']}</td>
+            </tr>`;
         }
-
-        // Scroll nav
-        function scrollToSection(id, el) {
-            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
+        html+='</tbody></table></div>';
+        if(!data.has_pr_details){
+            html+='<div style="padding:10px 16px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border-subtle)">ℹ️ PR Reviews & Comments data requires running the CLI without --fast flag. Re-fetch is in progress.</div>';
         }
+        box.innerHTML=html;
+    }catch(e){
+        box.innerHTML='<div class="repo-empty">Error loading data</div>';
+    }
+}
 
-        // Refresh
-        async function refreshData() {
-            const btn = document.getElementById('refreshBtn');
-            btn.innerHTML = '<span class="spinner"></span> Refreshing...';
-            btn.disabled = true;
-
-            try {
-                const resp = await fetch('/api/refresh', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ org: '{{ org }}' })
-                });
-                const data = await resp.json();
-                if (resp.ok) {
-                    showToast('Data refreshed! Reloading...', 'success');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showToast('Error: ' + data.message, 'error');
-                }
-            } catch (e) {
-                showToast('Network error', 'error');
-            } finally {
-                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5zM1.705 8.005a.75.75 0 01.834.656 5.501 5.501 0 009.592 2.97l-1.204-1.204a.25.25 0 01.177-.427h3.646a.25.25 0 01.25.25v3.646a.25.25 0 01-.427.177l-1.38-1.38A7.001 7.001 0 011.05 8.84a.75.75 0 01.656-.834z"/></svg> Refresh Data';
-                btn.disabled = false;
-            }
-        }
-
-        function showToast(msg, type) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.className = 'toast show ' + type;
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-    </script>
+// Refresh
+async function refreshData(){
+    const btn=document.getElementById('refreshBtn');
+    btn.innerHTML='<span class="spinner"></span> Refreshing…';btn.disabled=true;
+    try{
+        const r=await fetch('/api/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({org:ORG})});
+        const d=await r.json();
+        if(r.ok){showToast('Data refreshed! Reloading…','success');setTimeout(()=>location.reload(),800)}
+        else showToast('Error: '+d.message,'error');
+    }catch(e){showToast('Network error','error')}
+    finally{btn.innerHTML='<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5z"/></svg> Refresh';btn.disabled=false}
+}
+function showToast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className='toast show '+t;setTimeout(()=>e.classList.remove('show'),3000)}
+</script>
 </body>
 </html>
