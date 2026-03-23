@@ -51,11 +51,16 @@
         .btn{padding:8px 16px;border:1px solid var(--glass-border);border-radius:var(--radius-xs);background:var(--glass);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px;font-family:inherit;backdrop-filter:blur(8px)}
         .btn:hover{border-color:rgba(255,255,255,.15);background:var(--surface-hover);box-shadow:0 4px 16px rgba(0,0,0,.3)}
         .btn svg{width:14px;height:14px;fill:currentColor}
-        select.period-sel{appearance:none;padding:8px 32px 8px 14px;border:1px solid var(--glass-border);border-radius:var(--radius-xs);background:var(--glass) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(255,255,255,.5)' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 01.708 0L8 10.293l5.646-5.647a.5.5 0 01.708.708l-6 6a.5.5 0 01-.708 0l-6-6a.5.5 0 010-.708z'/%3E%3C/svg%3E") no-repeat right 10px center;color:var(--text);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s;backdrop-filter:blur(8px);min-width:140px}
-        select.period-sel:hover{border-color:rgba(255,255,255,.15)}
-        select.period-sel:focus{outline:none;border-color:rgba(108,92,231,.5);box-shadow:0 0 0 3px rgba(108,92,231,.12)}
-        select.period-sel option{background:#1a1a2e;color:#fff}
+        .period-bar{display:flex;gap:0;border-radius:var(--radius-xs);border:1px solid var(--glass-border);background:var(--glass);overflow:hidden;backdrop-filter:blur(8px)}
+        .period-btn{padding:7px 14px;font-size:11px;font-weight:600;font-family:inherit;color:var(--text-3);cursor:pointer;transition:all .2s;border:none;background:transparent;white-space:nowrap;position:relative}
+        .period-btn:not(:last-child)::after{content:'';position:absolute;right:0;top:20%;height:60%;width:1px;background:var(--glass-border)}
+        .period-btn:hover{color:var(--text-2);background:rgba(255,255,255,.03)}
+        .period-btn.on{color:#c4b5fd;background:linear-gradient(135deg,rgba(108,92,231,.2),rgba(236,72,153,.08))}
+        .period-btn.on::after{display:none}
+        .period-btn.loading{pointer-events:none;opacity:.6}
         .updated-pill{font-size:10px;color:var(--text-3);padding:4px 10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);white-space:nowrap}
+        .fade-out{opacity:.35;transition:opacity .15s;pointer-events:none}
+        .fade-in{opacity:1;transition:opacity .3s}
         .content{padding:32px 36px 64px}
 
         /* ── Vivid Stat Cards ── */
@@ -202,11 +207,11 @@
             <div class="topbar-title">Organization Dashboard</div>
             <div class="topbar-right">
                 <span class="updated-pill" id="updatedPill">Loading…</span>
-                <select class="period-sel" id="periodSel" onchange="changePeriod(this.value)">
+                <div class="period-bar" id="periodBar">
                     {% for opt in period_options %}
-                    <option value="{{ opt.value }}" {% if opt.value == months %}selected{% endif %}>{{ opt.label }}</option>
+                    <button class="period-btn{% if opt.value == months %} on{% endif %}" data-m="{{ opt.value }}" onclick="changePeriod({{ opt.value }},this)">{{ opt.label }}</button>
                     {% endfor %}
-                </select>
+                </div>
                 <div class="chip"><svg viewBox="0 0 16 16"><path d="M1.75 16A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.75.75 0 11.832-1.248l1.064.71c.487.325.793.871.793 1.458v6.456A1.75 1.75 0 0114.25 16z"/></svg>{{ org }}</div>
                 <button class="btn" onclick="doRefresh()" id="rfBtn"><svg viewBox="0 0 16 16"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5zM1.705 8.005a.75.75 0 01.834.656 5.501 5.501 0 009.592 2.97l-1.204-1.204a.25.25 0 01.177-.427h3.646a.25.25 0 01.25.25v3.646a.25.25 0 01-.427.177l-1.38-1.38A7.001 7.001 0 011.05 8.84a.75.75 0 01.656-.834z"/></svg>Refresh</button>
             </div>
@@ -219,12 +224,12 @@
         <!-- KPI -->
         <section id="overview">
             <div class="kpi-grid">
-                <div class="kpi v-violet"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">📦</div><div class="kpi-label">Repositories</div><div class="kpi-val">{{ data.summary.total_repos }}</div><div class="kpi-sub">Active in period</div></div></div>
-                <div class="kpi v-emerald"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">⚡</div><div class="kpi-label">Total Commits</div><div class="kpi-val">{{ "{:,}".format(data.summary.total_commits) }}</div><div class="kpi-sub">Last 3 months</div></div></div>
-                <div class="kpi v-pink"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">🔀</div><div class="kpi-label">Pull Requests</div><div class="kpi-val">{{ "{:,}".format(data.summary.total_prs) }}</div><div class="kpi-sub">Opened / updated</div></div></div>
-                <div class="kpi v-cyan"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">👥</div><div class="kpi-label">Developers</div><div class="kpi-val">{{ data.summary.total_devs }}</div><div class="kpi-sub">Active contributors</div></div></div>
-                <div class="kpi v-amber"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">🚀</div><div class="kpi-label">Deployments</div><div class="kpi-val">{{ "{:,}".format(data.summary.total_deploys) }}</div><div class="kpi-sub">CI/CD runs</div></div></div>
-                <div class="kpi v-rose"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">🕐</div><div class="kpi-label">Avg Lead Time</div><div class="kpi-val">{{ data.summary.avg_lead_time }}h</div><div class="kpi-sub">Branch to merge</div></div></div>
+                <div class="kpi v-violet"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">📦</div><div class="kpi-label">Repositories</div><div class="kpi-val" id="kpiRepos">{{ data.summary.total_repos }}</div><div class="kpi-sub">Active in period</div></div></div>
+                <div class="kpi v-emerald"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">⚡</div><div class="kpi-label">Total Commits</div><div class="kpi-val" id="kpiCommits">{{ "{:,}".format(data.summary.total_commits) }}</div><div class="kpi-sub">Selected period</div></div></div>
+                <div class="kpi v-pink"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">🔀</div><div class="kpi-label">Pull Requests</div><div class="kpi-val" id="kpiPRs">{{ "{:,}".format(data.summary.total_prs) }}</div><div class="kpi-sub">Opened / updated</div></div></div>
+                <div class="kpi v-cyan"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">👥</div><div class="kpi-label">Developers</div><div class="kpi-val" id="kpiDevs">{{ data.summary.total_devs }}</div><div class="kpi-sub">Active contributors</div></div></div>
+                <div class="kpi v-amber"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">🚀</div><div class="kpi-label">Deployments</div><div class="kpi-val" id="kpiDeploys">{{ "{:,}".format(data.summary.total_deploys) }}</div><div class="kpi-sub">CI/CD runs</div></div></div>
+                <div class="kpi v-rose"><div class="kpi-bg"></div><div class="kpi-inner"><div class="kpi-icon">🕐</div><div class="kpi-label">Avg Lead Time</div><div class="kpi-val" id="kpiLead">{{ data.summary.avg_lead_time }}h</div><div class="kpi-sub">Branch to merge</div></div></div>
             </div>
         </section>
 
@@ -232,10 +237,10 @@
         <section id="dora">
             <div class="sec"><div class="sec-head"><div class="sec-title">DORA Metrics</div></div></div>
             <div class="dora-row">
-                <div class="dora"><span class="dora-em">⏱️</span><div class="dora-lbl">Lead Time</div><div class="dora-val" style="color:var(--violet-l)">{{ data.summary.avg_lead_time }}</div><div class="dora-unit">hours (avg)</div></div>
-                <div class="dora"><span class="dora-em">🚀</span><div class="dora-lbl">Deploy Frequency</div><div class="dora-val" style="color:#6ee7b7">{{ data.summary.total_deploys }}</div><div class="dora-unit">total deployments</div></div>
-                <div class="dora"><span class="dora-em">⚠️</span><div class="dora-lbl">Change Failure Rate</div><div class="dora-val" style="color:#fda4af">{{ data.summary.avg_fail_rate }}%</div><div class="dora-unit">of deployments</div></div>
-                <div class="dora"><span class="dora-em">🔧</span><div class="dora-lbl">Avg Deploy Time</div><div class="dora-val" style="color:#fcd34d">{{ data.summary.avg_deploy_time }}</div><div class="dora-unit">minutes</div></div>
+                <div class="dora"><span class="dora-em">⏱️</span><div class="dora-lbl">Lead Time</div><div class="dora-val" id="doraLead" style="color:var(--violet-l)">{{ data.summary.avg_lead_time }}</div><div class="dora-unit">hours (avg)</div></div>
+                <div class="dora"><span class="dora-em">🚀</span><div class="dora-lbl">Deploy Frequency</div><div class="dora-val" id="doraDeploys" style="color:#6ee7b7">{{ data.summary.total_deploys }}</div><div class="dora-unit">total deployments</div></div>
+                <div class="dora"><span class="dora-em">⚠️</span><div class="dora-lbl">Change Failure Rate</div><div class="dora-val" id="doraFail" style="color:#fda4af">{{ data.summary.avg_fail_rate }}%</div><div class="dora-unit">of deployments</div></div>
+                <div class="dora"><span class="dora-em">🔧</span><div class="dora-lbl">Avg Deploy Time</div><div class="dora-val" id="doraDT" style="color:#fcd34d">{{ data.summary.avg_deploy_time }}</div><div class="dora-unit">minutes</div></div>
             </div>
         </section>
 
@@ -261,7 +266,7 @@
 
         <!-- Developers -->
         <section id="developers">
-            <div class="sec"><div class="sec-head"><div class="sec-title">Developer Activity</div><span class="sec-badge">{{ data.developers|length }} developers</span></div></div>
+            <div class="sec"><div class="sec-head"><div class="sec-title">Developer Activity</div><span class="sec-badge" id="devBadge">{{ data.developers|length }} developers</span></div></div>
             <div class="glass-panel"><div style="overflow-x:auto">
                 <table class="t" id="devT"><thead><tr>
                     <th onclick="srt('devT',0,'s')">Developer</th><th onclick="srt('devT',1,'n')">Commits</th><th onclick="srt('devT',2,'n')">Lines Added</th><th onclick="srt('devT',3,'n')">Lines Deleted</th><th onclick="srt('devT',4,'n')">PRs Opened</th><th onclick="srt('devT',5,'n')">PRs Reviewed</th><th onclick="srt('devT',6,'n')">PR Comments</th><th onclick="srt('devT',7,'s')">Repositories</th>
@@ -275,7 +280,7 @@
 
         <!-- Repositories -->
         <section id="repositories">
-            <div class="sec"><div class="sec-head"><div class="sec-title">Repository Metrics</div><span class="sec-badge">{{ data.repos|length }} repos</span></div></div>
+            <div class="sec"><div class="sec-head"><div class="sec-title">Repository Metrics</div><span class="sec-badge" id="repoBadge">{{ data.repos|length }} repos</span></div></div>
             <div class="glass-panel"><div style="overflow-x:auto">
                 <table class="t" id="repoT"><thead><tr>
                     <th onclick="srt('repoT',0,'s')">Repository</th><th onclick="srt('repoT',1,'n')">Commits</th><th onclick="srt('repoT',2,'n')">PRs</th><th onclick="srt('repoT',3,'n')">Lead Time (h)</th><th onclick="srt('repoT',4,'n')">Deploys</th><th onclick="srt('repoT',5,'n')">Fail %</th><th onclick="srt('repoT',6,'n')">Deploy (m)</th><th onclick="srt('repoT',7,'s')">Language</th><th onclick="srt('repoT',8,'n')">Branches</th><th onclick="srt('repoT',9,'n')">Contributors</th>
@@ -294,31 +299,94 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const RD={{ data.repos|tojson }},DD={{ data.developers|tojson }},ORG='{{ org }}',MONTHS={{ months }};
+let RD={{ data.repos|tojson }},DD={{ data.developers|tojson }};
+const ORG='{{ org }}';
+let MONTHS={{ months }};
+let activeRepo=null;
 const P=['#6c5ce7','#10b981','#ec4899','#06b6d4','#f59e0b','#f43f5e','#3b82f6','#a855f7','#f97316','#14b8a6'];
-Chart.defaults.color='rgba(255,255,255,.35)';Chart.defaults.borderColor='rgba(255,255,255,.06)';
-Chart.defaults.font.family="'Inter',system-ui,sans-serif";Chart.defaults.font.size=11;
-function bOpts(h){return{responsive:true,maintainAspectRatio:false,indexAxis:h?'y':'x',plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(20,20,40,.9)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.7)',padding:12,cornerRadius:8,titleFont:{weight:'700'}}},scales:{[h?'x':'y']:{beginAtZero:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.3)'}},[h?'y':'x']:{grid:{display:false},ticks:{maxRotation:45,color:'rgba(255,255,255,.3)'}}}}}
-if(RD.length){
+const charts={};
+
+Chart.defaults.color='rgba(255,255,255,.35)';
+Chart.defaults.borderColor='rgba(255,255,255,.06)';
+Chart.defaults.font.family="'Inter',system-ui,sans-serif";
+Chart.defaults.font.size=11;
+
+function bOpts(h){return{responsive:true,maintainAspectRatio:false,indexAxis:h?'y':'x',animation:{duration:400,easing:'easeOutCubic'},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(20,20,40,.9)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.7)',padding:12,cornerRadius:8,titleFont:{weight:'700'}}},scales:{[h?'x':'y']:{beginAtZero:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.3)'}},[h?'y':'x']:{grid:{display:false},ticks:{maxRotation:45,color:'rgba(255,255,255,.3)'}}}}}
+
+function buildCharts(){
+    Object.values(charts).forEach(c=>c.destroy());
+    if(!RD.length&&!DD.length)return;
     const L=RD.map(r=>r.Repository.replace('qomitto-',''));
-    function grd(ctx,c){const g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,c+'50');g.addColorStop(1,c+'08');return g}
-    const c1=document.getElementById('cCommits').getContext('2d');
-    new Chart(c1,{type:'bar',data:{labels:L,datasets:[{data:RD.map(r=>r.Commits),backgroundColor:P.map((c,i)=>{const g=c1.createLinearGradient(0,0,0,260);g.addColorStop(0,c+'60');g.addColorStop(1,c+'15');return g}),borderColor:P,borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:bOpts(false)});
-    const c2=document.getElementById('cPRs').getContext('2d');
-    new Chart(c2,{type:'bar',data:{labels:L,datasets:[{data:RD.map(r=>r.PRs),backgroundColor:P.map((c,i)=>{const g=c2.createLinearGradient(0,0,0,260);g.addColorStop(0,c+'60');g.addColorStop(1,c+'15');return g}),borderColor:P,borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:bOpts(false)});
-    const c4=document.getElementById('cLead').getContext('2d');
-    new Chart(c4,{type:'bar',data:{labels:L,datasets:[{data:RD.map(r=>r['Lead Time (h)']),backgroundColor:RD.map(r=>{const v=r['Lead Time (h)'];return v<=24?'rgba(16,185,129,.4)':v<=72?'rgba(245,158,11,.4)':'rgba(244,63,94,.4)'}),borderColor:RD.map(r=>{const v=r['Lead Time (h)'];return v<=24?'#10b981':v<=72?'#f59e0b':'#f43f5e'}),borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:{...bOpts(false),scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,.04)'},title:{display:true,text:'Hours',color:'rgba(255,255,255,.3)'},ticks:{color:'rgba(255,255,255,.3)'}},x:{grid:{display:false},ticks:{maxRotation:45,color:'rgba(255,255,255,.3)'}}}}});
+    if(RD.length){
+        const c1=document.getElementById('cCommits').getContext('2d');
+        charts.commits=new Chart(c1,{type:'bar',data:{labels:L,datasets:[{data:RD.map(r=>r.Commits),backgroundColor:P.map(c=>{const g=c1.createLinearGradient(0,0,0,260);g.addColorStop(0,c+'60');g.addColorStop(1,c+'15');return g}),borderColor:P,borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:bOpts(false)});
+        const c2=document.getElementById('cPRs').getContext('2d');
+        charts.prs=new Chart(c2,{type:'bar',data:{labels:L,datasets:[{data:RD.map(r=>r.PRs),backgroundColor:P.map(c=>{const g=c2.createLinearGradient(0,0,0,260);g.addColorStop(0,c+'60');g.addColorStop(1,c+'15');return g}),borderColor:P,borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:bOpts(false)});
+        const c4=document.getElementById('cLead').getContext('2d');
+        charts.lead=new Chart(c4,{type:'bar',data:{labels:L,datasets:[{data:RD.map(r=>r['Lead Time (h)']),backgroundColor:RD.map(r=>{const v=r['Lead Time (h)'];return v<=24?'rgba(16,185,129,.4)':v<=72?'rgba(245,158,11,.4)':'rgba(244,63,94,.4)'}),borderColor:RD.map(r=>{const v=r['Lead Time (h)'];return v<=24?'#10b981':v<=72?'#f59e0b':'#f43f5e'}),borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:{...bOpts(false),scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,.04)'},title:{display:true,text:'Hours',color:'rgba(255,255,255,.3)'},ticks:{color:'rgba(255,255,255,.3)'}},x:{grid:{display:false},ticks:{maxRotation:45,color:'rgba(255,255,255,.3)'}}}}}); }
+    if(DD.length){
+        const top=DD.slice(0,10),c3=document.getElementById('cDevs').getContext('2d');
+        const bg=c3.createLinearGradient(0,0,600,0);bg.addColorStop(0,'rgba(16,185,129,.5)');bg.addColorStop(1,'rgba(16,185,129,.1)');
+        charts.devs=new Chart(c3,{type:'bar',data:{labels:top.map(d=>d.Developer),datasets:[{data:top.map(d=>d['Lines Added']),backgroundColor:bg,borderColor:'#10b981',borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:bOpts(true)}); }
 }
-if(DD.length){
-    const top=DD.slice(0,10),c3=document.getElementById('cDevs').getContext('2d');
-    const bg=c3.createLinearGradient(0,0,600,0);bg.addColorStop(0,'rgba(16,185,129,.5)');bg.addColorStop(1,'rgba(16,185,129,.1)');
-    new Chart(c3,{type:'bar',data:{labels:top.map(d=>d.Developer),datasets:[{data:top.map(d=>d['Lines Added']),backgroundColor:bg,borderColor:'#10b981',borderWidth:1.5,borderRadius:8,borderSkipped:false}]},options:bOpts(true)});
+buildCharts();
+
+function fmt(n){return Number(n).toLocaleString()}
+function langCls(l){l=(l||'').toLowerCase();if(l==='java')return'lang-java';if(l==='javascript')return'lang-javascript';if(l==='typescript')return'lang-typescript';return'lang-default'}
+
+function updateKPIs(s){
+    const ids=[['kpiRepos',s.total_repos],['kpiCommits',fmt(s.total_commits)],['kpiPRs',fmt(s.total_prs)],
+               ['kpiDevs',s.total_devs],['kpiDeploys',fmt(s.total_deploys)],['kpiLead',s.avg_lead_time+'h']];
+    ids.forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v});
+    const doraIds=[['doraLead',s.avg_lead_time],['doraDeploys',s.total_deploys],['doraFail',s.avg_fail_rate+'%'],['doraDT',s.avg_deploy_time]];
+    doraIds.forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v});
+    const db=document.getElementById('devBadge');if(db)db.textContent=s.total_devs+' developers';
+    const rb=document.getElementById('repoBadge');if(rb)rb.textContent=s.total_repos+' repos';
+}
+
+function updateDevTable(devs){
+    const tb=document.querySelector('#devT tbody');if(!tb)return;
+    tb.innerHTML=devs.map(d=>`<tr><td class="dn">${d.Developer}</td><td class="n">${fmt(d.Commits)}</td><td class="n g">+${fmt(d['Lines Added'])}</td><td class="n r">-${fmt(d['Lines Deleted'])}</td><td class="n">${d['PRs Opened']}</td><td class="n">${d['PRs Reviewed']}</td><td class="n">${d['PR Comments']}</td><td class="rc">${d.Repositories||''}</td></tr>`).join('');
+}
+
+function updateRepoTable(repos){
+    const tb=document.querySelector('#repoT tbody');if(!tb)return;
+    tb.innerHTML=repos.map(r=>`<tr><td class="rn">${r.Repository}</td><td class="n">${r.Commits}</td><td class="n">${r.PRs}</td><td class="n">${r['Lead Time (h)']}</td><td class="n">${r.Deploys}</td><td class="n">${r['Fail %']}%</td><td class="n">${r['Deploy (m)']}</td><td><span class="lang ${langCls(r.Language)}">${r.Language}</span></td><td class="n">${r.Branches}</td><td class="n">${r.Contributors}</td></tr>`).join('');
+}
+
+async function changePeriod(m,btnEl){
+    if(m===MONTHS)return;
+    MONTHS=m;
+    history.replaceState(null,'',`?months=${m}`);
+    document.querySelectorAll('.period-btn').forEach(b=>{b.classList.remove('on');b.classList.add('loading')});
+    btnEl.classList.add('on');
+    document.querySelector('.content').classList.add('fade-out');
+    try{
+        const r=await fetch(`/api/metrics/${ORG}?months=${m}`);
+        const data=await r.json();
+        RD=data.repos; DD=data.developers;
+        updateKPIs(data.summary);
+        updateDevTable(data.developers);
+        updateRepoTable(data.repos);
+        buildCharts();
+        if(activeRepo){
+            const tab=document.querySelector(`.tab[data-repo="${activeRepo}"]`);
+            if(tab)pickRepo(activeRepo,tab);
+        }
+    }catch(e){toast('Failed to load data','err')}
+    finally{
+        document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('loading'));
+        document.querySelector('.content').classList.remove('fade-out');
+        document.querySelector('.content').classList.add('fade-in');
+        setTimeout(()=>document.querySelector('.content').classList.remove('fade-in'),350);
+    }
 }
 
 function srt(id,c,t){const tbl=document.getElementById(id),tb=tbl.querySelector('tbody'),rows=[...tb.rows];const th=tbl.querySelectorAll('thead th')[c],asc=th.dataset.s!=='a';tbl.querySelectorAll('thead th').forEach(h=>{h.classList.remove('sorted');delete h.dataset.s});th.classList.add('sorted');th.dataset.s=asc?'a':'d';rows.sort((a,b)=>{let x=a.cells[c].textContent.trim(),y=b.cells[c].textContent.trim();if(t==='n'){x=parseFloat(x.replace(/[,+\-%]/g,''))||0;y=parseFloat(y.replace(/[,+\-%]/g,''))||0}return x<y?(asc?-1:1):x>y?(asc?1:-1):0});rows.forEach(r=>tb.appendChild(r))}
 function go(id,el){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});document.querySelectorAll('.nav-a').forEach(n=>n.classList.remove('on'));el.classList.add('on')}
 
 async function pickRepo(name,el){
+    activeRepo=name;
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
     const box=document.getElementById('repoBody');
     box.innerHTML='<div class="exp-loading"><span class="dots"><i></i><i></i><i></i></span> Loading…</div>';
@@ -328,14 +396,13 @@ async function pickRepo(name,el){
         let h='<div style="overflow-x:auto"><table class="t"><thead><tr><th>Developer</th><th>Commits</th><th>Lines Added</th><th>Lines Deleted</th><th>PRs Opened</th><th>PRs Reviewed</th><th>PR Comments</th></tr></thead><tbody>';
         for(const v of d.developers)h+=`<tr><td class="dn">${v.Developer}</td><td class="n">${v.Commits.toLocaleString()}</td><td class="n g">+${v['Lines Added'].toLocaleString()}</td><td class="n r">-${v['Lines Deleted'].toLocaleString()}</td><td class="n">${v['PRs Opened']}</td><td class="n">${v['PRs Reviewed']}</td><td class="n">${v['PR Comments']}</td></tr>`;
         h+='</tbody></table></div>';
-        if(!d.has_pr_details)h+='<div class="note-bar">ℹ️ PR Reviews/Comments require running CLI without --fast flag.</div>';
+        if(!d.has_pr_details)h+='<div class="note-bar">ℹ️ PR Reviews/Comments require running CLI without --fast.</div>';
         box.innerHTML=h;
     }catch(e){box.innerHTML='<div class="exp-placeholder">Error loading data</div>'}
 }
 
 async function doRefresh(){const b=document.getElementById('rfBtn');b.innerHTML='<span class="spinner"></span> Refreshing…';b.disabled=true;try{const r=await fetch('/api/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({org:ORG})});const d=await r.json();if(r.ok){toast('Data refreshed!','ok');setTimeout(()=>location.reload(),800)}else toast('Error: '+d.message,'err')}catch(e){toast('Network error','err')}finally{b.innerHTML='<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5z"/></svg> Refresh';b.disabled=false}}
 function toast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className='toast show '+t;setTimeout(()=>e.classList.remove('show'),3000)}
-function changePeriod(v){const u=new URL(window.location);u.searchParams.set('months',v);window.location=u.toString()}
 fetch('/api/collection-info').then(r=>r.json()).then(d=>{const p=document.getElementById('updatedPill');if(d.last_updated){const dt=new Date(d.last_updated);p.textContent='Updated '+dt.toLocaleDateString()+' · '+d.cache_size_mb+'MB'}else{p.textContent='No data yet'}}).catch(()=>{});
 </script>
 </body>
