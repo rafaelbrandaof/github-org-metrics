@@ -51,6 +51,11 @@
         .btn{padding:8px 16px;border:1px solid var(--glass-border);border-radius:var(--radius-xs);background:var(--glass);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px;font-family:inherit;backdrop-filter:blur(8px)}
         .btn:hover{border-color:rgba(255,255,255,.15);background:var(--surface-hover);box-shadow:0 4px 16px rgba(0,0,0,.3)}
         .btn svg{width:14px;height:14px;fill:currentColor}
+        select.period-sel{appearance:none;padding:8px 32px 8px 14px;border:1px solid var(--glass-border);border-radius:var(--radius-xs);background:var(--glass) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(255,255,255,.5)' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 01.708 0L8 10.293l5.646-5.647a.5.5 0 01.708.708l-6 6a.5.5 0 01-.708 0l-6-6a.5.5 0 010-.708z'/%3E%3C/svg%3E") no-repeat right 10px center;color:var(--text);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s;backdrop-filter:blur(8px);min-width:140px}
+        select.period-sel:hover{border-color:rgba(255,255,255,.15)}
+        select.period-sel:focus{outline:none;border-color:rgba(108,92,231,.5);box-shadow:0 0 0 3px rgba(108,92,231,.12)}
+        select.period-sel option{background:#1a1a2e;color:#fff}
+        .updated-pill{font-size:10px;color:var(--text-3);padding:4px 10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);white-space:nowrap}
         .content{padding:32px 36px 64px}
 
         /* ── Vivid Stat Cards ── */
@@ -196,6 +201,12 @@
         <div class="topbar">
             <div class="topbar-title">Organization Dashboard</div>
             <div class="topbar-right">
+                <span class="updated-pill" id="updatedPill">Loading…</span>
+                <select class="period-sel" id="periodSel" onchange="changePeriod(this.value)">
+                    {% for opt in period_options %}
+                    <option value="{{ opt.value }}" {% if opt.value == months %}selected{% endif %}>{{ opt.label }}</option>
+                    {% endfor %}
+                </select>
                 <div class="chip"><svg viewBox="0 0 16 16"><path d="M1.75 16A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.75.75 0 11.832-1.248l1.064.71c.487.325.793.871.793 1.458v6.456A1.75 1.75 0 0114.25 16z"/></svg>{{ org }}</div>
                 <button class="btn" onclick="doRefresh()" id="rfBtn"><svg viewBox="0 0 16 16"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5zM1.705 8.005a.75.75 0 01.834.656 5.501 5.501 0 009.592 2.97l-1.204-1.204a.25.25 0 01.177-.427h3.646a.25.25 0 01.25.25v3.646a.25.25 0 01-.427.177l-1.38-1.38A7.001 7.001 0 011.05 8.84a.75.75 0 01.656-.834z"/></svg>Refresh</button>
             </div>
@@ -283,7 +294,7 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const RD={{ data.repos|tojson }},DD={{ data.developers|tojson }},ORG='{{ org }}';
+const RD={{ data.repos|tojson }},DD={{ data.developers|tojson }},ORG='{{ org }}',MONTHS={{ months }};
 const P=['#6c5ce7','#10b981','#ec4899','#06b6d4','#f59e0b','#f43f5e','#3b82f6','#a855f7','#f97316','#14b8a6'];
 Chart.defaults.color='rgba(255,255,255,.35)';Chart.defaults.borderColor='rgba(255,255,255,.06)';
 Chart.defaults.font.family="'Inter',system-ui,sans-serif";Chart.defaults.font.size=11;
@@ -312,7 +323,7 @@ async function pickRepo(name,el){
     const box=document.getElementById('repoBody');
     box.innerHTML='<div class="exp-loading"><span class="dots"><i></i><i></i><i></i></span> Loading…</div>';
     try{
-        const r=await fetch(`/api/repo-developers/${ORG}/${name}`),d=await r.json();
+        const r=await fetch(`/api/repo-developers/${ORG}/${name}?months=${MONTHS}`),d=await r.json();
         if(!d.developers||!d.developers.length){box.innerHTML='<div class="exp-placeholder">No developer activity found for this repository</div>';return}
         let h='<div style="overflow-x:auto"><table class="t"><thead><tr><th>Developer</th><th>Commits</th><th>Lines Added</th><th>Lines Deleted</th><th>PRs Opened</th><th>PRs Reviewed</th><th>PR Comments</th></tr></thead><tbody>';
         for(const v of d.developers)h+=`<tr><td class="dn">${v.Developer}</td><td class="n">${v.Commits.toLocaleString()}</td><td class="n g">+${v['Lines Added'].toLocaleString()}</td><td class="n r">-${v['Lines Deleted'].toLocaleString()}</td><td class="n">${v['PRs Opened']}</td><td class="n">${v['PRs Reviewed']}</td><td class="n">${v['PR Comments']}</td></tr>`;
@@ -324,6 +335,8 @@ async function pickRepo(name,el){
 
 async function doRefresh(){const b=document.getElementById('rfBtn');b.innerHTML='<span class="spinner"></span> Refreshing…';b.disabled=true;try{const r=await fetch('/api/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({org:ORG})});const d=await r.json();if(r.ok){toast('Data refreshed!','ok');setTimeout(()=>location.reload(),800)}else toast('Error: '+d.message,'err')}catch(e){toast('Network error','err')}finally{b.innerHTML='<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0114.95 7.16a.75.75 0 11-1.49.178A5.501 5.501 0 008 2.5z"/></svg> Refresh';b.disabled=false}}
 function toast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className='toast show '+t;setTimeout(()=>e.classList.remove('show'),3000)}
+function changePeriod(v){const u=new URL(window.location);u.searchParams.set('months',v);window.location=u.toString()}
+fetch('/api/collection-info').then(r=>r.json()).then(d=>{const p=document.getElementById('updatedPill');if(d.last_updated){const dt=new Date(d.last_updated);p.textContent='Updated '+dt.toLocaleDateString()+' · '+d.cache_size_mb+'MB'}else{p.textContent='No data yet'}}).catch(()=>{});
 </script>
 </body>
 </html>

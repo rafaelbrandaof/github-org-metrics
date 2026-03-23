@@ -1,0 +1,22 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - metrics-data:/app/data
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_ORG=${GITHUB_ORG:-augentic-tech}
+      - TARGET_REPOS=${TARGET_REPOS:-qomitto-enrollment qomitto-gateway qomitto-data-service qomitto-search-service qomitto-driver-license-service qomitto-camunda qomitto-order-service qomitto-report-service qomitto-backoffice}
+      - DASHBOARD_USER=${DASHBOARD_USER:-admin}
+      - DASHBOARD_PASS=${DASHBOARD_PASS:-admin}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change-me-in-production}
+      - DATA_DIR=/app/data
+      - COLLECT_MONTHS=${COLLECT_MONTHS:-12}
+      # Cron: every Monday at 06:00 UTC
+      - CRON_SCHEDULE=${CRON_SCHEDULE:-0 6 * * 1}
+    restart: unless-stopped
+
+volumes:
+  metrics-data:
